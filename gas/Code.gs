@@ -33,16 +33,19 @@ function doPost(e) {
   const name = clean_(p.name, 120);
   if (!name) return out_({ ok: false, error: 'empty name' });
 
+  // Любой сбой возвращается ответом {ok:false}: страница покажет гостю «не получилось», а не «записано».
   const lock = LockService.getScriptLock();
-  lock.waitLock(20000);                                    // две анкеты одновременно не затрут друг друга
+  if (!lock.tryLock(20000)) return out_({ ok: false, error: 'busy' });   // две анкеты одновременно не затрут друг друга
   try {
     const sh = sheet_();
     const now = new Date();
-    const id = clean_(p.id, 64);
+    const id = id_(p.id);
     const values = FIELDS.map(f => safe_(f === 'name' ? name : clean_(p[f], 1000)));
     const row = id ? findRow_(sh, id) : 0;
     if (row) sh.getRange(row, 2, 1, HEADERS.length - 1).setValues([[now].concat(values, [id])]);
     else sh.appendRow([now, ''].concat(values, [id]));
+  } catch (err) {
+    return out_({ ok: false, error: 'server' });
   } finally {
     lock.releaseLock();
   }
@@ -57,6 +60,7 @@ function sheet_() {
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#DDD5C5').setWrap(true);
     sh.getRange('A:B').setNumberFormat('dd.MM.yyyy HH:mm');
+    sh.getRange('C:N').setNumberFormat('@');                 // ответы — всегда текст: «12.12» и «1/2» не станут датами
   }
   return sh;
 }
@@ -67,6 +71,12 @@ function findRow_(sh, id) {
   const ids = sh.getRange(2, HEADERS.length, last - 1, 1).getValues();
   for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === id) return i + 2;
   return 0;
+}
+
+// ID анкеты выдаёт страница (буквы, цифры, дефис). Всё иное отбрасывается: анкета запишется новой строкой без ID.
+function id_(v) {
+  const id = clean_(v, 64);
+  return /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(id) ? id : '';
 }
 
 function clean_(v, max) {

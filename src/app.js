@@ -64,13 +64,14 @@
     get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   };
+  var gid = '';                            // без localStorage (приватный режим) ID живёт до закрытия страницы
   function guestId() {
-    var id = store.get(KEY.id);
-    if (!id) {
-      id = (W.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-      store.set(KEY.id, id);
+    if (!gid) gid = store.get(KEY.id) || '';
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{5,63}$/.test(gid)) {
+      gid = (W.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      store.set(KEY.id, gid);
     }
-    return id;
+    return gid;
   }
 
   var form = $('#form'), done = $('#done'), statusEl = $('#status'), countEl = $('#count'), goBtn = $('#go');
@@ -115,19 +116,15 @@
     var body = new URLSearchParams(data);
     var ctl = W.AbortController ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 20000);
-    function post(mode) {
-      return fetch(CFG.endpoint, { method: 'POST', body: body, mode: mode, redirect: 'follow', signal: ctl ? ctl.signal : undefined });
-    }
-    return post('cors').then(function (r) {
+    // Успех — только прочитанный ответ {ok:true}. Отправки «вслепую» нет: страница ошибки Apps Script
+    // (исключение, закрытый доступ) приходит без CORS-заголовка и не должна выглядеть как «записано».
+    // Повторная попытка безопасна: таблица обновляет строку по ID анкеты.
+    return fetch(CFG.endpoint, { method: 'POST', body: body, mode: 'cors', redirect: 'follow', signal: ctl ? ctl.signal : undefined }).then(function (r) {
       return r.text().then(function (t) {
         var j = null;
         try { j = JSON.parse(t); } catch (e) {}
-        if (!r.ok || !j || !j.ok) throw new Error((j && j.error) || 'bad-response');
+        if (!r.ok || !j || !j.ok) { var err = new Error((j && j.error) || 'bad-response'); err.server = true; throw err; }
       });
-    }, function (err) {
-      if (err && err.name === 'AbortError') throw err;
-      // браузер не дал прочитать ответ (CORS) — отправляем «вслепую»: запись в таблицу при этом проходит
-      return post('no-cors').then(function () {});
     }).then(function () { clearTimeout(timer); }, function (e) { clearTimeout(timer); throw e; });
   }
 
@@ -195,9 +192,11 @@
       if (trap) return ok(false);                 // ловушка для роботов: молча «принято»
       if (!CFG.endpoint) return ok(true);
       goBtn.disabled = true; label.textContent = 'Отправляю…';
-      send(data).then(function () { ok(false); }, function () {
+      send(data).then(function () { ok(false); }, function (err) {
         goBtn.disabled = false; label.textContent = text;
-        setStatus('Не получилось отправить: проверь интернет и нажми ещё раз. Ответы сохранены на этом устройстве.');
+        setStatus(err && err.server
+          ? 'Не получилось записать ответы: попробуй ещё раз через минуту. Ответы сохранены на этом устройстве.'
+          : 'Не получилось отправить: проверь интернет и нажми ещё раз. Ответы сохранены на этом устройстве.');
       });
     });
   }
@@ -205,7 +204,7 @@
   // =====================================================================
   //  ФИНАЛ: серебряный дождь
   // =====================================================================
-  var finale = $('#finale'), rainJob = null, finaleOpen = false, lastFocus = null;
+  var finale = $('#finale'), mainEl = $('main'), rainJob = null, finaleOpen = false, lastFocus = null;
   function showFinale(demo) {
     if (!finale || finaleOpen) return;
     finaleOpen = true;
@@ -214,6 +213,7 @@
     $('#finaleDemo').hidden = !demo;
     finale.hidden = false;
     finale.classList.remove('is-leaving');
+    if (mainEl) mainEl.inert = true;       // пока открыт финал, Tab не уходит на страницу под ним
     lock(true);
     fitAll(finale);
     var next = $('#finaleNext');
@@ -231,7 +231,7 @@
       gsap.fromTo(word._sp.chars, { yPercent: 112 }, { yPercent: 0, duration: 1.25, ease: 'expo.out', stagger: 0.055, delay: 0.25 });
       gsap.fromTo('.finale__b', { clipPath: 'inset(-30% 105% -30% -5%)' }, { clipPath: 'inset(-30% -5% -30% -5%)', duration: 1.5, ease: 'power2.inOut', delay: 0.95 });
       gsap.fromTo([next, '.finale__demo'], { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: 2.3, stagger: 0.1 });
-      if (Silver && Silver.supported) rainJob = Silver.rain(cv, { duration: 15 });
+      if (Silver && Silver.supported) { try { rainJob = Silver.rain(cv, { duration: 15 }); } catch (e) { rainJob = null; } }
     }
     setTimeout(function () { next.focus({ preventScroll: true }); }, 60);
   }
@@ -243,9 +243,12 @@
       finale.hidden = true;
       if (rainJob) { rainJob.stop(); rainJob = null; }
     }
+    if (mainEl) mainEl.inert = false;
     lock(false);
     if (ST) ST.refresh();
     scrollToEl($('#gift'), true);
+    var back = $('#giftTitle');
+    if (back) { back.setAttribute('tabindex', '-1'); back.focus({ preventScroll: true }); }
     if (motion) gsap.to(finale, { autoAlpha: 0, duration: 0.8, ease: 'power2.inOut', onComplete: end });
     else end();
   }
@@ -313,7 +316,7 @@
     if (fine && W.Lenis) {
       lenis = new W.Lenis({ lerp: 0.105, wheelMultiplier: 1, autoRaf: false });
       lenis.on('scroll', ST.update);
-      gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
+      gsap.ticker.add(function (t) { if (lenis) lenis.raf(t * 1000); });
       gsap.ticker.lagSmoothing(0);
       lenis.stop();
     }
@@ -325,12 +328,17 @@
     });
   }
 
+  // сбой WebGL (шейдер не собрался, контекст потерян) оставляет страницу без блеска, но рабочей
+  function gl(make) {
+    try { return make() || null; } catch (e) { if (W.console) console.warn(e); root.classList.add('no-gl'); return null; }
+  }
+
   function initSilver() {
     if (!Silver || !Silver.supported) { root.classList.add('no-gl'); return; }
     var bc = $('#ball');
-    if (bc) { ball = Silver.ball(bc, { bands: 23, speed: 0.17, tilt: -0.2, seed: 5 }); $('#cover')._gl = [ball]; }
+    if (bc) { ball = gl(function () { return Silver.ball(bc, { bands: 23, speed: 0.17, tilt: -0.2, seed: 5 }); }); if (ball) $('#cover')._gl = [ball]; }
     $$('[data-fringe]').forEach(function (c) {
-      var f = Silver.fringe(c, { seed: +c.getAttribute('data-seed') || 3, density: 1 });
+      var f = gl(function () { return Silver.fringe(c, { seed: +c.getAttribute('data-seed') || 3, density: 1 }); });
       if (!f) return;
       fringes.push(f);
       var sec = c.closest('.stack');
@@ -522,7 +530,7 @@
 
   function intro() {
     var box = $('#intro'), cv = $('#curtain'), flash = $('#flash');
-    var curtain = Silver && Silver.supported ? Silver.fringe(cv, { curtain: true, seed: 7, density: 1.15, minLen: 1.02, maxLen: 1.12 }) : null;
+    var curtain = Silver && Silver.supported ? gl(function () { return Silver.fringe(cv, { curtain: true, seed: 7, density: 1.15, minLen: 1.02, maxLen: 1.12 }); }) : null;
     if (!curtain) box.classList.add('is-plain');
     W.scrollTo(0, 0);
     Promise.all([ready(6000), wait(1500)]).then(function () {
@@ -557,13 +565,33 @@
     W.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(relayout, 150); });
     if (Silver && Silver.supported) {
       var bc = $('#ball');
-      if (bc) Silver.ball(bc, { bands: 23, speed: 0.17, tilt: -0.2, seed: 5 });
-      $$('[data-fringe]').forEach(function (c) { Silver.fringe(c, { seed: +c.getAttribute('data-seed') || 3 }); });
+      if (bc) gl(function () { return Silver.ball(bc, { bands: 23, speed: 0.17, tilt: -0.2, seed: 5 }); });
+      $$('[data-fringe]').forEach(function (c) { gl(function () { return Silver.fringe(c, { seed: +c.getAttribute('data-seed') || 3 }); }); });
     }
   }
 
   initForm();
   initVideo();
+
+  // Аварийный выход: сценарий движения упал — показываем страницу целиком и возвращаем обычную прокрутку.
+  var bailed = false;
+  function bail(err) {
+    if (bailed) return;
+    bailed = true;
+    if (W.console && err) console.error(err);
+    try { ST.getAll().forEach(function (t) { t.kill(); }); gsap.globalTimeline.clear(); } catch (e) {}
+    if (lenis) { try { lenis.destroy(); } catch (e) {} lenis = null; }
+    root.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped', 'lenis-scrolling', 'is-locked', 'is-loading');
+    root.classList.add('is-plain');        // стили is-plain снимают всё, что успели спрятать анимации
+    var box = $('#intro');
+    if (box) box.remove();
+    try { relayout(); } catch (e) {}
+  }
+  // снять с обложки только то, что выставил coverSet (кегль заголовка и координаты бликов остаются)
+  function coverClear() {
+    gsap.killTweensOf(['.title__fit', '#glass', '.note__hi'].concat($$('#cover [data-in]')));
+    gsap.set(['.title__fit', '#glass', '#ballWrap', '.note__hi'].concat($$('#cover [data-in]')), { clearProps: 'transform,opacity,visibility,clipPath' });
+  }
 
   if (!motion) { plain(); return; }
   try {
@@ -572,19 +600,20 @@
     initSilver();
     ST.addEventListener('refreshInit', relayout);
     d.fonts.ready.then(function () {
+      if (bailed) return;
       relayout();
       initStack();
       initReveals();
       initPointer();
       ST.refresh();
-    });
+    }).catch(bail);
     intro();
     // страховка: занавес не должен остаться навсегда
     setTimeout(function () {
-      if (root.classList.contains('is-loading')) { var b = $('#intro'); if (b) b.remove(); open(); gsap.set('#cover *', { clearProps: 'all' }); }
+      if (bailed || !root.classList.contains('is-loading')) return;
+      try { var b = $('#intro'); if (b) b.remove(); open(); coverClear(); } catch (err) { bail(err); }
     }, 11000);
   } catch (err) {
-    if (W.console) console.error(err);
-    plain();
+    bail(err);
   }
 })();

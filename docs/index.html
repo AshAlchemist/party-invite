@@ -231,7 +231,7 @@ html:not(.js) .intro{display:none}
 .foot__b i{width:18px;height:1px;background:currentColor}
 
 /* ===== Финал: серебряный дождь ===== */
-.finale{position:fixed;inset:0;z-index:200;display:grid;place-items:center;color:var(--milk)}
+.finale{position:fixed;inset:0;z-index:200;display:grid;align-items:safe center;justify-items:center;overflow-y:auto;overscroll-behavior:contain;color:var(--milk)}
 .finale[hidden]{display:none}
 .finale::before{content:'';position:absolute;inset:0;background:var(--black) var(--grain-night);opacity:var(--veil,1)}
 .finale__rain{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
@@ -300,6 +300,20 @@ html:not(.js) .intro{display:none}
 }
 
 html.is-locked,html.is-locked body{overflow:hidden}
+[tabindex="-1"]:focus{outline:none}
+
+/* низкий экран (телефон на боку): финал целиком помещается, кнопка «и последнее…» не уходит за край */
+@media (max-height:500px){
+  .finale__in{width:min(86vw,820px,108vh);padding:10px 0}
+  .finale__b{font-size:clamp(30px,16vh,150px)}
+  .finale__demo{margin-top:8px;font-size:12.5px}
+  .finale__next{margin-top:8px;font-size:30px}
+  .finale__next i{height:18px}
+}
+
+/* аварийный режим: сценарий движения упал — ничего не остаётся спрятанным */
+html.is-plain :is([data-in],[data-rise],[data-rise] *,[data-chars],[data-chars] *,[data-write],[data-photo],[data-photo] *,.title__fit,#glass,#ballWrap,.note__hi,.stack){opacity:1!important;visibility:visible!important;transform:none!important;clip-path:none!important}
+html.is-plain .shade{opacity:0!important}
 .ln-mask{padding:.1em .14em .18em;margin:-.1em -.14em -.18em}
 
 </style>
