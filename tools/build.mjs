@@ -1,6 +1,7 @@
 // Сборка приглашения. Запускать из каталога проекта.
 //   node tools/build.mjs --site dist/site          — сайт для хостинга: index.html + assets/
 //   node tools/build.mjs --single party.html       — один HTML-файл: шрифты, фото, видео и скрипты встроены
+//   --url https://домен/                           — адрес сайта: делает картинку предпросмотра ссылки (og:image) абсолютной
 import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 
@@ -9,6 +10,8 @@ const site = args.includes('--site');
 const out = args[args.indexOf(site ? '--site' : '--single') + 1];
 if (!out || (!site && !args.includes('--single'))) { console.error('нужно: --site <папка> или --single <файл.html>'); process.exit(2); }
 
+const base = args.includes('--url') ? String(args[args.indexOf('--url') + 1] || '').replace(/\/?$/, '/') : '';
+if (base && !/^https?:\/\/[^\s"<>]+\/$/.test(base)) { console.error('--url: нужен адрес вида https://домен/'); process.exit(2); }
 const MIME = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg', mp4: 'video/mp4', woff2: 'font/woff2' };
 const ext = f => f.split('.').pop();
 const dataUri = file => `data:${MIME[ext(file)]};base64,${readFileSync(file).toString('base64')}`;
@@ -49,7 +52,7 @@ html = html.replace('<!--PRELOAD-->', () => preload);
 if (!site || !existsSync('assets/img/og.jpg')) html = html.replace(/^.*\{\{IMG:og\.jpg\}\}.*\n/m, '');
 
 // --- картинки и видео ---
-html = html.replace(/\{\{IMG:([\w.-]+)\}\}/g, (_, n) => asset('img', n, 'assets/img'));
+html = html.replace(/\{\{IMG:([\w.-]+)\}\}/g, (_, n) => (n === 'og.jpg' ? base : '') + asset('img', n, 'assets/img'));
 html = html.replace(/\{\{VIDEO\}\}/g, () => asset('video', 'gift.mp4', 'assets/video'));
 
 // --- скрипты: GSAP (бесплатная лицензия GreenSock), Lenis (MIT), свои ---

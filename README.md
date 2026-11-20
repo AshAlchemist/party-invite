@@ -6,9 +6,8 @@
 
 | Путь | Что это |
 |---|---|
-| `dist/site/` | готовый сайт для хостинга: `index.html` + папка `assets/` |
-| `dist/party-invite-site.zip` | тот же сайт архивом — для загрузки на хостинг |
-| `dist/party-invite.html` | всё в одном файле (шрифты, фото, видео внутри, ≈ 8,6 МБ) — для просмотра без хостинга |
+| `docs/` | готовый сайт: `index.html` + папка `assets/`; его отдаёт GitHub Pages |
+| `dist/` | в репозиторий не входит; собирается командами из раздела 3: сайт, архив и вариант «всё в одном файле» |
 | `gas/Code.gs` | скрипт Google Таблицы, который принимает анкеты |
 | `src/` | исходники: `index.html`, `style.css`, `app.js`, `silver.js` (шар, бахрома, дождь на WebGL) |
 | `assets/` | фото, видео, картинка предпросмотра ссылки |
@@ -29,7 +28,7 @@
    `{"ok":true,"message":"Приём анкет работает"}`.
 6. Впишите адрес в страницу. В `src/index.html` найдите в блоке `window.PARTY` строку `endpoint: '',` и вставьте адрес в кавычки:
    `endpoint: 'https://script.google.com/macros/s/…/exec'`. Затем пересоберите (раздел 3).
-   Без пересборки: ту же строку можно поправить прямо в `dist/site/index.html`.
+   Затем обновите сайт (раздел 2).
 
 Как это работает: каждая анкета — одна строка. Если гость нажал «Изменить ответы» и отправил снова,
 обновляется его же строка (по «ID анкеты»), в столбце «Изменено» появляется время правки.
@@ -38,19 +37,33 @@
 Если поменяли `Code.gs` после развёртывания: **Развертывание → Управление развертываниями → ✏️ → Версия: Новая → Развернуть**
 (адрес остаётся прежним).
 
-## 2. Выложить сайт
+## 2. Где опубликовано и как обновлять
 
-Сайт статический, подойдёт любой хостинг: загрузите содержимое `dist/site/` (или распакуйте `dist/party-invite-site.zip`)
-в корень сайта. Нужен HTTPS — без него браузер телефона может не запустить видео со звуком.
+- Репозиторий: https://github.com/pitcher2029-jpg/party-invite (ветка `main` — исходники и готовый сайт в `docs/`).
+- Сайт: https://pitcher2029-jpg.github.io/party-invite/ — GitHub Pages отдаёт ветку `gh-pages`, в ней лежит содержимое `docs/`.
 
-Чтобы в мессенджере у ссылки была картинка, в `index.html` замените `content="assets/img/og.jpg"`
-на полный адрес: `content="https://ваш-домен/assets/img/og.jpg"` (мессенджеры не понимают относительные адреса).
+Обновить сайт после правок:
+
+```
+node tools/build.mjs --site docs --url https://pitcher2029-jpg.github.io/party-invite/
+git add -A && git commit -m "что изменено"
+git push origin main
+git push origin $(git subtree split --prefix docs):refs/heads/gh-pages --force
+```
+
+Свой домен (куплен на reg.ru): в `docs/` кладётся файл `CNAME` с именем домена одной строкой,
+в DNS-записях домена на reg.ru — четыре A-записи `@` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+и CNAME `www` → `pitcher2029-jpg.github.io.`; после этого в настройках репозитория (Settings → Pages) включается «Enforce HTTPS».
+Нужен HTTPS — без него браузер телефона может не запустить видео со звуком.
+
+Картинка у ссылки в мессенджере требует полного адреса, поэтому сборке передаётся адрес сайта (`--url`).
+После привязки домена пересоберите с ним: `node tools/build.mjs --site docs --url https://ваш-домен/`.
 
 ## 3. Пересобрать после правок
 
 ```
-node tools/build.mjs --site dist/site
-node tools/build.mjs --single dist/party-invite.html
+node tools/build.mjs --site docs --url https://pitcher2029-jpg.github.io/party-invite/   # сайт для GitHub Pages
+node tools/build.mjs --single dist/party-invite.html   # всё в одном файле, ≈ 8,6 МБ
 ```
 
 Заменить видео: положите новый файл как `assets/video/gift.mp4` (H.264 + AAC, вертикальный, желательно до 10 МБ),
@@ -63,7 +76,7 @@ node tools/build.mjs --single dist/party-invite.html
 
 ```
 node --test tests/gas.test.mjs                  # скрипт таблицы: 5 тестов
-python3 -m http.server 8765 --bind 127.0.0.1 --directory dist/site &
+python3 -m http.server 8765 --bind 127.0.0.1 --directory docs &
 node tools/e2e.mjs http://127.0.0.1:8765/       # анкета от заполнения до финала, 8 шагов
 node tools/shot.mjs http://127.0.0.1:8765/ shot.png --w 390 --h 844 --wait 7000   # снимок экрана
 ```
