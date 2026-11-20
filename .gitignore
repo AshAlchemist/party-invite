@@ -1,0 +1,8 @@
+# исходные фото и видео, рендеры, снимки проверок — в репозиторий не идут
+assets-src/
+render/
+shots/
+# сборки: сайт для GitHub Pages лежит в docs/, остальное собирается командой из README
+dist/
+node_modules/
+.DS_Store

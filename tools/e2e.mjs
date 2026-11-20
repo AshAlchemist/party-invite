@@ -1,0 +1,117 @@
+// Сквозная проверка анкеты: node tools/e2e.mjs <url страницы>
+// Поднимает приёмник-заглушку вместо Google, заполняет форму, проверяет отправку, финал, повторный вход и сбой сети.
+import { createRequire } from 'node:module';
+import http from 'node:http';
+import assert from 'node:assert/strict';
+const require = createRequire('/srv/agent/tools/browser/node_modules/');
+const { chromium } = require('playwright-core');
+
+const url = process.argv[2];
+const got = [];
+const srv = http.createServer((req, res) => {
+  let body = '';
+  req.on('data', c => { body += c; });
+  req.on('end', () => {
+    if (req.method === 'POST') got.push(Object.fromEntries(new URLSearchParams(body)));
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.end('{"ok":true}');
+  });
+});
+await new Promise(r => srv.listen(0, '127.0.0.1', r));
+const endpoint = `http://127.0.0.1:${srv.address().port}/exec`;
+
+const browser = await chromium.launch({ channel: 'chromium', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+const page = await ctx.newPage();
+const errors = [];
+page.on('console', m => { if (m.type() === 'error' && !/favicon/.test(m.location().url || '')) errors.push(m.text()); });
+page.on('pageerror', e => errors.push('pageerror: ' + e.message));
+const step = (name) => console.log('ok —', name);
+
+await page.goto(url, { waitUntil: 'load' });
+await page.waitForFunction(() => !document.documentElement.classList.contains('is-loading'), null, { timeout: 15000 });
+await page.waitForFunction(() => !document.querySelector('#intro'), null, { timeout: 15000 });
+step('занавес открылся и убран');
+
+// 1. пустое имя не отправляется
+await page.evaluate(e => { window.PARTY.endpoint = e; }, endpoint);
+await page.locator('#go').scrollIntoViewIfNeeded();
+await page.locator('#go').click();
+await page.waitForTimeout(400);
+assert.equal(got.length, 0);
+assert.match(await page.locator('#status').textContent(), /имя/);
+assert.equal(await page.locator('#finale').isHidden(), true);
+step('без имени анкета не уходит, показана подсказка');
+
+// 2. заполнение и отправка
+await page.locator('#f-name').fill('Анна Тестовая');
+await page.locator('#q1').fill('Надувной фламинго');
+await page.locator('.chips[data-for="q7"] .chip').nth(1).click();
+await page.locator('#q10').fill('=СУММ(1;2)');
+assert.equal(await page.locator('#q7').inputValue(), 'Музыку');
+assert.equal((await page.locator('#count').textContent()).trim(), 'Отвечено 3 из 10');
+await page.locator('#go').click();
+await page.waitForFunction(() => !document.querySelector('#finale').hidden, null, { timeout: 8000 });
+assert.equal(got.length, 1);
+assert.equal(got[0].name, 'Анна Тестовая');
+assert.equal(got[0].q1, 'Надувной фламинго');
+assert.equal(got[0].q7, 'Музыку');
+assert.equal(got[0].q2, '');
+assert.ok(got[0].id && got[0].id.length > 8);
+assert.equal(await page.locator('#finaleDemo').isHidden(), true);
+assert.match(await page.locator('#finale').innerText(), /СПАСИБО/i);
+step('анкета ушла на приёмник: имя, ответы, ID; открыт финал без пометки показа');
+
+// 3. дождь идёт: верхняя полоса экрана (там только дождь) меняется от кадра к кадру
+await page.waitForTimeout(2500);
+const strip = { x: 0, y: 0, width: 390, height: 150 };
+const f1 = await page.screenshot({ clip: strip });
+await page.waitForTimeout(500);
+const f2 = await page.screenshot({ clip: strip });
+assert.ok(!f1.equals(f2), 'дождь не движется');
+assert.ok(f1.length > 3000, 'полоса пустая: ' + f1.length);
+step('серебряный дождь движется (кадры различаются, ' + f1.length + ' и ' + f2.length + ' байт)');
+
+// 4. «и последнее…» закрывает финал и ведёт к подарку
+await page.locator('#finaleNext').click();
+await page.waitForFunction(() => document.querySelector('#finale').hidden, null, { timeout: 5000 });
+const pos = await page.evaluate(() => Math.round(document.querySelector('#gift').getBoundingClientRect().top));
+assert.ok(Math.abs(pos) < 40, 'страница не у экрана подарка: ' + pos);
+assert.equal(await page.locator('#done').isVisible(), true);
+assert.equal(await page.locator('#form').isHidden(), true);
+step('финал закрыт, страница у экрана подарка, карточка в состоянии «Спасибо»');
+
+// 5. повторный вход: состояние и черновик сохранены, правка обновляет ту же анкету
+await page.reload({ waitUntil: 'load' });
+await page.waitForFunction(() => !document.querySelector('#intro'), null, { timeout: 15000 });
+assert.equal(await page.locator('#done').isHidden(), false);
+await page.evaluate(e => { window.PARTY.endpoint = e; }, endpoint);
+await page.locator('#edit').scrollIntoViewIfNeeded();
+await page.locator('#edit').click();
+assert.equal(await page.locator('#f-name').inputValue(), 'Анна Тестовая');
+await page.locator('#q2').fill('Кот сел на ключи');
+await page.locator('#go').scrollIntoViewIfNeeded();
+await page.locator('#go').click();
+await page.waitForFunction(() => !document.querySelector('#finale').hidden, null, { timeout: 8000 });
+assert.equal(got.length, 2);
+assert.equal(got[1].id, got[0].id);
+assert.equal(got[1].q2, 'Кот сел на ключи');
+await page.keyboard.press('Escape');
+await page.waitForFunction(() => document.querySelector('#finale').hidden, null, { timeout: 5000 });
+step('после перезагрузки ответы на месте; правка уходит с тем же ID; Esc закрывает финал');
+
+// 6. сбой сети: понятное сообщение, финала нет
+await new Promise(r => srv.close(r));
+await page.locator('#edit').scrollIntoViewIfNeeded();
+await page.locator('#edit').click();
+await page.locator('#go').scrollIntoViewIfNeeded();
+await page.locator('#go').click();
+await page.waitForFunction(() => /Не получилось/.test(document.querySelector('#status').textContent), null, { timeout: 30000 });
+assert.equal(await page.locator('#finale').isHidden(), true);
+assert.equal(await page.locator('#go').isDisabled(), false);
+step('при сбое сети — сообщение об ошибке, кнопка снова активна');
+
+assert.deepEqual(errors.filter(e => !/ERR_CONNECTION_REFUSED|Failed to fetch|Failed to load resource/.test(e)), []);
+step('ошибок в консоли нет');
+await browser.close();
+console.log('ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ');

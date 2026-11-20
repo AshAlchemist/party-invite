@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Это моя вечеринка — 12 декабря, 17:00</title>
+<meta name="description" content="Приглашение на частную вечеринку: 12 декабря, суббота, 17:00. Усадьба МасловыхЪ, село Фомино.">
+<meta name="theme-color" content="#0A0A09">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Это моя вечеринка">
+<meta property="og:description" content="12 декабря · суббота · 17:00 · Усадьба МасловыхЪ">
+<meta property="og:image" content="{{IMG:og.jpg}}">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0A09'/%3E%3Ccircle cx='16' cy='17' r='10' fill='%23C6C9CC'/%3E%3Cpath d='M6 17h20M8 12h16M8 22h16M16 7v20M11 8v18M21 8v18' stroke='%230A0A09' stroke-width='1'/%3E%3Cpath d='M16 0v7' stroke='%23C6C9CC'/%3E%3C/svg%3E">
+<!--PRELOAD-->
+<style>
+/*FONTS*/
+/*CSS*/
+</style>
+<script>
+  document.documentElement.classList.add('js', 'is-loading');
+  /* ===== НАСТРОЙКИ =====
+     endpoint — адрес веб-приложения Google Apps Script (…/exec), куда уходят анкеты.
+     Пока он пустой, анкета работает в режиме показа: ответы остаются только в браузере гостя. */
+  window.PARTY = {
+    endpoint: '',
+    env: '{{IMG:env.jpg}}'
+  };
+</script>
+</head>
+<body>
+
+<!-- Занавес: серебряная бахрома на входе -->
+<div class="intro" id="intro" aria-hidden="true">
+  <canvas class="intro__fringe" id="curtain"></canvas>
+</div>
+<div class="flash" id="flash" aria-hidden="true"></div>
+
+<main id="top">
+
+  <!-- ===== ЭКРАН 1. ОБЛОЖКА ===== -->
+  <section class="cover paper stack" id="cover" aria-labelledby="title">
+    <div class="cover__bar">
+      <span data-in>№ 12&thinsp;/&thinsp;12</span>
+      <span data-in>Вход по приглашениям</span>
+    </div>
+
+    <h1 class="title" id="title" aria-label="Это моя вечеринка">
+      <span class="title__row" aria-hidden="true"><span class="title__fit" data-fit>ЭТО МОЯ</span></span>
+      <span class="title__row" aria-hidden="true"><span class="title__fit title__fit--b" data-fit>ВЕЧЕРИНКА</span></span>
+    </h1>
+
+    <div class="cover__stage">
+      <div class="ball" id="ballWrap" aria-hidden="true">
+        <i class="ball__cord"></i>
+        <canvas class="ball__gl" id="ball"></canvas>
+      </div>
+
+      <figure class="glass" id="glass">
+        <img src="{{IMG:glass.webp}}" srcset="{{IMG:glass-760.webp}} 760w, {{IMG:glass.webp}} 1380w" sizes="(min-width: 1000px) 42vw, 92vw"
+             width="1380" height="2380" alt="Именинница сидит в большом хрустальном бокале на высокой ножке, рядом — оливки на серебряной шпажке" fetchpriority="high" decoding="async">
+        <i class="glint" style="--x:54.2%;--y:34.6%;--s:1.25;--d:0s"></i>
+        <i class="glint" style="--x:12.2%;--y:20.2%;--s:.8;--d:1.3s"></i>
+        <i class="glint" style="--x:32.4%;--y:37.4%;--s:1;--d:2.1s"></i>
+        <i class="glint" style="--x:93%;--y:39%;--s:.7;--d:.7s"></i>
+        <i class="glint" style="--x:62.6%;--y:63.4%;--s:.9;--d:2.9s"></i>
+      </figure>
+
+      <div class="note">
+        <p class="note__hi script" data-write>Дорогие друзья!</p>
+        <p class="note__text" data-in>Приглашаю вас провести время со&nbsp;мной 12&nbsp;декабря, в&nbsp;субботу, в&nbsp;17:00.</p>
+      </div>
+
+      <div class="code" aria-hidden="true" data-in>
+        <i class="code__bars"></i>
+        <span>1212 2026 1700</span>
+      </div>
+    </div>
+
+    <a class="cover__next" href="#dress" data-in aria-label="Листать дальше"><i></i></a>
+    <i class="shade" aria-hidden="true"></i>
+  </section>
+
+  <!-- ===== ЭКРАН 2. DRESS CODE ===== -->
+  <section class="dress night stack" id="dress" aria-labelledby="dressTitle">
+    <canvas class="fringe" data-fringe data-seed="3" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <h2 class="display dress__title" id="dressTitle" aria-label="Dress code">
+        <span class="display__row" aria-hidden="true"><span data-fit data-chars>DRESS</span></span>
+        <span class="display__row" aria-hidden="true"><span data-fit data-chars>CODE</span></span>
+      </h2>
+
+      <div class="dress__palette">
+        <ul class="swatches" aria-label="Палитра вечера">
+          <li class="sw sw--black" aria-label="Чёрный"><i></i></li>
+          <li class="sw sw--milk" aria-label="Молочный"><i></i></li>
+          <li class="sw sw--silver" aria-label="Серебристый"><i></i></li>
+          <li class="sw sw--olive" aria-label="Оливковый"><i></i></li>
+        </ul>
+        <p class="dress__text" data-rise>Чёрный, молочный, серебристый и&nbsp;оливковый.</p>
+      </div>
+
+      <div class="looks">
+        <figure class="look look--1" data-photo><div class="look__in"><img src="{{IMG:dc1.webp}}" width="736" height="1104" loading="lazy" decoding="async" alt="Чёрный костюм и серебряная мишура на полу, усыпанном конфетти"></div></figure>
+        <figure class="look look--2" data-photo><div class="look__in"><img src="{{IMG:dc2.webp}}" width="900" height="1688" loading="lazy" decoding="async" alt="Серебряная юбка в пайетках и чёрный жакет"></div></figure>
+        <figure class="look look--3" data-photo><div class="look__in"><img src="{{IMG:dc3.webp}}" width="800" height="1200" loading="lazy" decoding="async" alt="Оливковый атласный костюм с белым цветком"></div></figure>
+        <figure class="look look--4" data-photo><div class="look__in"><img src="{{IMG:dc4.webp}}" width="1039" height="1280" loading="lazy" decoding="async" alt="Чёрное атласное платье и серебряное колье, снято со вспышкой"></div></figure>
+      </div>
+    </div>
+    <i class="shade" aria-hidden="true"></i>
+  </section>
+
+  <!-- ===== ЭКРАН 3. WHEN / WHERE ===== -->
+  <section class="info paper stack" id="when">
+    <div class="wrap info__grid">
+      <div class="info__when">
+        <p class="label" data-in>When</p>
+        <div class="date" aria-label="12 декабря">
+          <span class="date__num" aria-hidden="true" data-chars>12</span>
+          <span class="date__month script" aria-hidden="true" data-write>декабря</span>
+        </div>
+        <dl class="facts">
+          <div data-in><dt>день</dt><dd>суббота</dd></div>
+          <div data-in><dt>начало</dt><dd>17:00</dd></div>
+        </dl>
+      </div>
+
+      <div class="info__where">
+        <p class="label" data-in>Where</p>
+        <h2 class="place" data-rise>Усадьба МасловыхЪ</h2>
+        <address class="addr" data-rise>ул. 8&nbsp;Марта, 57, село&nbsp;Фомино</address>
+        <a class="btn" data-in data-magnet href="https://yandex.ru/maps/org/usadba_maslovykh/149890868733?si=2zmdcnx471d8cm9mycghc5rbwr" target="_blank" rel="noopener">
+          <span class="btn__t">Построить маршрут</span>
+          <svg class="btn__i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 19 19 5M8 5h11v11" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        </a>
+      </div>
+    </div>
+    <i class="shade" aria-hidden="true"></i>
+  </section>
+
+  <!-- ===== ЭКРАН 4. НЕБОЛЬШАЯ ПРОСЬБА ===== -->
+  <section class="ask night" id="rsvp" aria-labelledby="askTitle">
+    <div class="spots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="card paper" id="card">
+      <header class="card__head">
+        <h2 class="askt" id="askTitle">
+          <span class="askt__a script" data-write>У меня к вам</span>
+          <span class="askt__b" data-rise>маленькая просьба!</span>
+        </h2>
+        <p class="card__lead" data-rise>Пожалуйста, подтвердите своё присутствие и&nbsp;заполните небольшую анкету. Это&nbsp;очень важно для&nbsp;меня&nbsp;<svg class="heart" viewBox="0 0 24 22" width="18" height="16" role="img" aria-label="сердце"><path d="M12 21C5 15.6 1 12 1 7.3 1 3.9 3.6 1.5 6.7 1.5c2 0 3.9 1 5.3 3 1.4-2 3.3-3 5.3-3 3.100 0 5.700 2.400 5.700 5.800C23 12 19 15.600 12 21Z" fill="currentColor"/></svg></p>
+      </header>
+
+      <form class="form" id="form" novalidate>
+        <div class="q q--name" data-in>
+          <label for="f-name"><span class="q__n">00</span><span class="q__t">Как тебя зовут?</span></label>
+          <input id="f-name" name="name" type="text" autocomplete="name" autocapitalize="words" enterkeyhint="next" maxlength="120" required placeholder="Имя и фамилия">
+        </div>
+
+        <ol class="qs">
+          <li class="q" data-in>
+            <label for="q1"><span class="q__n">01</span><span class="q__t">Какую самую странную вещь ты когда-либо покупал?</span></label>
+            <textarea id="q1" name="q1" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q2"><span class="q__n">02</span><span class="q__t">Какой самый смешной или нелепый повод заставлял тебя опаздывать?</span></label>
+            <textarea id="q2" name="q2" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q3"><span class="q__n">03</span><span class="q__t">Если бы ты имел возможность сменить профессию прямо завтра, кем бы ты стал?</span></label>
+            <textarea id="q3" name="q3" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q4"><span class="q__n">04</span><span class="q__t">Какую суперспособность ты бы выбрал, если бы она была максимально бесполезной?</span></label>
+            <textarea id="q4" name="q4" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q5"><span class="q__n">05</span><span class="q__t">Какую песню ты знаешь наизусть, хотя немного стыдно в этом признаваться?</span></label>
+            <textarea id="q5" name="q5" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q6"><span class="q__n">06</span><span class="q__t">Какой самый необычный комплимент ты получал?</span></label>
+            <textarea id="q6" name="q6" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q7"><span class="q__n">07</span><span class="q__t">Что бы ты предпочёл: чтобы твои друзья выбирали тебе одежду или музыку на целый год?</span></label>
+            <div class="chips" data-for="q7"><button type="button" class="chip">Одежду</button><button type="button" class="chip">Музыку</button></div>
+            <textarea id="q7" name="q7" rows="1" maxlength="1000" placeholder="Или своими словами"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q8"><span class="q__n">08</span><span class="q__t">Что хуже: случайно отправить сообщение не тому человеку или поставить лайк на фотографии десятилетней давности?</span></label>
+            <div class="chips" data-for="q8"><button type="button" class="chip">Сообщение не тому</button><button type="button" class="chip">Лайк на старом фото</button></div>
+            <textarea id="q8" name="q8" rows="1" maxlength="1000" placeholder="Или своими словами"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q9"><span class="q__n">09</span><span class="q__t">Если бы тебе пришлось всю жизнь есть одно блюдо, что бы это было?</span></label>
+            <textarea id="q9" name="q9" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+          <li class="q" data-in>
+            <label for="q10"><span class="q__n">10</span><span class="q__t">Если бы тебе дали миллион рублей, но потратить его нужно было за сутки, что бы ты сделал?</span></label>
+            <textarea id="q10" name="q10" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
+          </li>
+        </ol>
+
+        <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+        <div class="form__end">
+          <p class="form__count" id="count" aria-live="polite">Отвечено 0 из 10</p>
+          <button class="go" type="submit" id="go" data-magnet>
+            <span class="go__t">Йоу, я готов</span><span class="go__e" aria-hidden="true">😎</span>
+            <i class="go__sheen" aria-hidden="true"></i>
+          </button>
+          <p class="form__status" id="status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <div class="done" id="done" hidden>
+        <p class="done__a">Спасибо,</p>
+        <p class="done__b script">очень жду тебя</p>
+        <p class="done__note" id="doneNote"></p>
+        <button class="link" type="button" id="edit">Изменить ответы</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ЭКРАН 5. ПРО ПОДАРОК ===== -->
+  <section class="gift night" id="gift" aria-labelledby="giftTitle">
+    <canvas class="fringe" data-fringe data-seed="9" aria-hidden="true"></canvas>
+    <div class="wrap gift__grid">
+      <div class="gift__copy">
+        <p class="gift__pre script" data-write>И последнее…</p>
+        <h2 class="gift__text" id="giftTitle" data-rise>Ни на что не&nbsp;намекаю, но&nbsp;буду рада подарку в&nbsp;<em>конверте.</em></h2>
+      </div>
+
+      <div class="screen" id="screen" data-photo>
+        <div class="screen__frame">
+          <video id="video" playsinline preload="metadata" poster="{{IMG:poster.jpg}}" src="{{VIDEO}}"></video>
+          <button class="screen__play" id="play" type="button" aria-label="Смотреть видео со звуком">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 4.500v15l13-7.500z" fill="currentColor"/></svg>
+            <span>Смотреть со звуком</span>
+          </button>
+          <div class="screen__bar" aria-hidden="true"><i id="bar"></i></div>
+        </div>
+        <i class="glint" style="--x:1%;--y:2%;--s:1.2;--d:.4s"></i>
+        <i class="glint" style="--x:99%;--y:97%;--s:.9;--d:1.8s"></i>
+      </div>
+    </div>
+
+    <footer class="foot">
+      <p class="foot__a script">до встречи</p>
+      <p class="foot__b">12.12 <i></i> 17:00 <i></i> Усадьба МасловыхЪ</p>
+    </footer>
+  </section>
+</main>
+
+<!-- Финал после отправки анкеты: серебряный дождь -->
+<div class="finale" id="finale" hidden role="dialog" aria-modal="true" aria-labelledby="finaleTitle">
+  <canvas class="finale__rain" id="rain" aria-hidden="true"></canvas>
+  <div class="finale__in">
+    <p class="finale__a" id="finaleTitle"><span data-fit>СПАСИБО,</span></p>
+    <p class="finale__b script">очень жду тебя</p>
+    <p class="finale__demo" id="finaleDemo" hidden>Режим показа: адрес таблицы ещё не задан, ответы никуда не отправлены.</p>
+    <button class="finale__next" id="finaleNext" type="button"><span>и последнее…</span><i></i></button>
+  </div>
+</div>
+
+<!--SCRIPTS-->
+</body>
+</html>
