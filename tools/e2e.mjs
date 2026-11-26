@@ -24,6 +24,8 @@ const endpoint = `http://127.0.0.1:${srv.address().port}/exec`;
 
 const browser = await chromium.launch({ channel: 'chromium', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+// боевая таблица в проверках не участвует: всё, что ушло бы на Google, обрывается
+await ctx.route(/script\.google(usercontent)?\.com/, r => r.abort());
 const page = await ctx.newPage();
 const errors = [];
 page.on('console', m => { if (m.type() === 'error' && !/favicon/.test(m.location().url || '')) errors.push(m.text()); });

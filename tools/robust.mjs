@@ -13,6 +13,8 @@ const step = name => console.log('ok —', name);
 
 async function open(viewport, init, mobile = false) {
   const ctx = await browser.newContext({ viewport, hasTouch: mobile, isMobile: mobile });
+  // боевая таблица в проверках не участвует: всё, что ушло бы на Google, обрывается
+  await ctx.route(/script\.google(usercontent)?\.com/, r => r.abort());
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -84,6 +86,7 @@ async function wheelMoves(page) {
 // 3. телефон на боку: кнопка закрытия финала на экране (режим показа — самый высокий вариант финала)
 for (const [w, h] of [[844, 390], [844, 340], [667, 375]]) {
   const { ctx, page } = await open({ width: w, height: h }, null, true);
+  await page.evaluate(() => { window.PARTY.endpoint = ''; });   // режим показа — на боевой адрес не отправляем
   await fillName(page, 'Гость');
   await page.locator('#go').click();
   await page.waitForFunction(() => !document.querySelector('#finale').hidden);
