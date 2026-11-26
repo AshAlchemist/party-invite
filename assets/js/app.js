@@ -50,10 +50,33 @@
     root.classList.toggle('is-locked', v);
     if (lenis) { if (v) lenis.stop(); else lenis.start(); }
   }
+  // На телефоне (без Lenis) встроенная плавная прокрутка у каждого браузера своя и часто короче полсекунды —
+  // ведём её сами: 1,2–1,6 с с разгоном и торможением; касание или колесо гостя прокрутку останавливают
+  var glide = null;
+  function glideStop() {
+    if (glide) { glide.kill(); glide = null; }
+    W.removeEventListener('touchstart', glideStop);
+    W.removeEventListener('wheel', glideStop);
+  }
   function scrollToEl(el, immediate) {
     if (!el) return;
-    if (lenis) lenis.scrollTo(el, { immediate: !!immediate, duration: 1.6, force: true });
-    else el.scrollIntoView({ behavior: immediate || reduce ? 'auto' : 'smooth', block: 'start' });
+    if (lenis) { lenis.scrollTo(el, { immediate: !!immediate, duration: 1.6, force: true }); return; }
+    if (immediate || reduce || !gsap) { el.scrollIntoView({ behavior: immediate || reduce ? 'auto' : 'smooth', block: 'start' }); return; }
+    scrollToY(W.scrollY + el.getBoundingClientRect().top);
+  }
+  function scrollToY(y) {
+    y = Math.max(0, Math.round(y));
+    if (lenis) { lenis.scrollTo(y, { duration: 1.6, force: true }); return; }
+    if (reduce || !gsap) { W.scrollTo(0, y); return; }
+    glideStop();
+    var o = { y: W.scrollY }, to = y;
+    W.addEventListener('touchstart', glideStop, { passive: true });
+    W.addEventListener('wheel', glideStop, { passive: true });
+    glide = gsap.to(o, {
+      y: to, duration: Math.min(1.6, 1.2 + Math.abs(to - o.y) / 4000), ease: 'power2.inOut',
+      onUpdate: function () { W.scrollTo(0, o.y); },
+      onComplete: glideStop
+    });
   }
 
   // =====================================================================
@@ -187,6 +210,12 @@
         store.set(KEY.sent, String(Date.now()));
         goBtn.disabled = false; label.textContent = text;
         showDone(demo);
+        // карточка «Спасибо» короче анкеты: страница под финалом съехала бы внутрь листа с видео.
+        // Ставим карточку по центру экрана — после финала страница поедет от неё вниз, к видео
+        if (ST) ST.refresh();
+        var r = done.getBoundingClientRect();
+        var y = Math.max(0, W.scrollY + r.top - Math.max(0, (W.innerHeight - r.height) / 2));
+        if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else W.scrollTo(0, y);
         showFinale(demo);
       }
       if (trap) return ok(false);                 // ловушка для роботов: молча «принято»
@@ -235,10 +264,39 @@
       if (Silver && Silver.supported) { try { rainJob = Silver.rain(cv, { duration: 15 }); } catch (e) { rainJob = null; } }
     }
     setTimeout(function () { next.focus({ preventScroll: true }); }, 60);
+    // через 2 с после того, как «СПАСИБО» прорисовано целиком, страница сама уезжает к видео
+    clearTimeout(autoNext);
+    autoNext = setTimeout(function go() {
+      if (!finaleOpen) return;
+      if (d.hidden) {                      // вкладка свёрнута: ждём возвращения гостя, видео не должно уйти в фон
+        d.addEventListener('visibilitychange', function back() {
+          if (d.hidden) return;
+          d.removeEventListener('visibilitychange', back);
+          autoNext = setTimeout(go, FINALE_HOLD * 1000);
+        });
+        return;
+      }
+      closeFinale();
+    }, ((motion ? FINALE_DRAWN : 0) + FINALE_HOLD) * 1000);
+  }
+  var FINALE_DRAWN = 2.45, FINALE_HOLD = 2, autoNext = 0;   // анимация «СПАСИБО» идёт 2,45 с (буквы, подпись)
+  // где остановиться на последнем листе: начало листа, но так, чтобы экран с видео был виден целиком
+  // (на телефоне текст и видео вместе не помещаются — видео важнее, оно запускается, когда видно больше половины)
+  function giftStop() {
+    var g = $('#gift'), s = $('#screen');
+    if (!g) return W.scrollY;
+    var y = W.scrollY + g.getBoundingClientRect().top;
+    if (s) {
+      var r = s.getBoundingClientRect(), m = 16, vh = W.innerHeight;
+      var top = W.scrollY + r.top, bottom = W.scrollY + r.bottom;
+      if (bottom - y > vh - m) y = Math.min(top - m, bottom - vh + m);
+    }
+    return y;
   }
   function closeFinale() {
     if (!finaleOpen) return;
     finaleOpen = false;
+    clearTimeout(autoNext);
     finale.classList.add('is-leaving');
     function end() {
       finale.hidden = true;
@@ -248,7 +306,7 @@
     if ($('#sound')) $('#sound').inert = false;
     lock(false);
     if (ST) ST.refresh();
-    scrollToEl($('#gift'), true);
+    scrollToY(giftStop());                 // плавно: гость видит, как страница уезжает к видео
     var back = $('#giftTitle');
     if (back) { back.setAttribute('tabindex', '-1'); back.focus({ preventScroll: true }); }
     if (motion) gsap.to(finale, { autoAlpha: 0, duration: 0.8, ease: 'power2.inOut', onComplete: end });
@@ -451,12 +509,14 @@
     });
     if (!('IntersectionObserver' in W)) return;
     new IntersectionObserver(function (es) {
-      inView = es[0].isIntersecting && es[0].intersectionRatio >= 0.55;
+      // видно больше половины видео — или видео выше экрана и занимает его почти целиком (телефон боком)
+      var e = es[0], vh = (e.rootBounds && e.rootBounds.height) || W.innerHeight;
+      inView = e.isIntersecting && (e.intersectionRatio >= 0.55 || e.intersectionRect.height >= 0.8 * vh);
       if (!inView) { if (!v.paused) v.pause(); return; }
       if (userPaused || v.ended || finaleOpen) return;
       if (!started) { started = true; if (reduce) show('Смотреть со звуком'); else loud(true); }
       else if (v.paused) { if (v.muted) muted(); else loud(false); }
-    }, { threshold: [0, 0.55, 1] }).observe(box);
+    }, { threshold: [0, 0.3, 0.4, 0.45, 0.5, 0.55, 1] }).observe(box);
   }
 
   // =====================================================================
