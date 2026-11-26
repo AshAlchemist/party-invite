@@ -39,21 +39,21 @@
 
 ## 2. Где опубликовано и как обновлять
 
-- Репозиторий: https://github.com/pitcher2029-jpg/party-invite (ветка `main` — исходники и готовый сайт в `docs/`).
-- Сайт: https://pitcher2029-jpg.github.io/party-invite/ — GitHub Pages отдаёт ветку `gh-pages`, в ней лежит содержимое `docs/`.
+- Репозиторий: https://github.com/AshAlchemist/party-invite (ветка `main` — исходники и готовый сайт в `docs/`).
+- Сайт: https://ashalchemist.github.io/party-invite/ — GitHub Pages отдаёт ветку `gh-pages`, в ней лежит содержимое `docs/`.
 
 Обновить сайт после правок:
 
 ```
-node tools/build.mjs --site docs --url https://pitcher2029-jpg.github.io/party-invite/
+node tools/build.mjs --site docs --url https://ashalchemist.github.io/party-invite/
 git add -A && git commit -m "что изменено"
 git push origin main
-git push origin $(git subtree split --prefix docs):refs/heads/gh-pages --force
+git push origin "$(git subtree split --prefix docs -q):refs/heads/gh-pages" --force
 ```
 
 Свой домен (куплен на reg.ru): в `docs/` кладётся файл `CNAME` с именем домена одной строкой,
 в DNS-записях домена на reg.ru — четыре A-записи `@` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
-и CNAME `www` → `pitcher2029-jpg.github.io.`; после этого в настройках репозитория (Settings → Pages) включается «Enforce HTTPS».
+и CNAME `www` → `ashalchemist.github.io.`; после этого в настройках репозитория (Settings → Pages) включается «Enforce HTTPS».
 Нужен HTTPS — без него браузер телефона может не запустить видео со звуком.
 
 Картинка у ссылки в мессенджере требует полного адреса, поэтому сборке передаётся адрес сайта (`--url`).
@@ -62,7 +62,7 @@ git push origin $(git subtree split --prefix docs):refs/heads/gh-pages --force
 ## 3. Пересобрать после правок
 
 ```
-node tools/build.mjs --site docs --url https://pitcher2029-jpg.github.io/party-invite/   # сайт для GitHub Pages
+node tools/build.mjs --site docs --url https://ashalchemist.github.io/party-invite/   # сайт для GitHub Pages
 node tools/build.mjs --single dist/party-invite.html   # всё в одном файле, ≈ 8,6 МБ
 ```
 
