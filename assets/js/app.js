@@ -425,15 +425,22 @@
     });
 
     // фото: шторка снизу вверх и вспышка
-    $$('[data-photo]').forEach(function (el, i) {
+    $$('[data-photo]').forEach(function (el) {
       var img = $('img', el);
+      var out = el.classList.contains('screen') ? 14 : 0;   // у видео линия-паспарту снаружи: шторка открывает и её
       gsap.set(el, { clipPath: 'inset(100% 0% 0% 0%)' });
       if (img) gsap.set(img, { scale: 1.28 });
       ST.create({
         trigger: el, start: 'top 90%', once: true,
         onEnter: function () {
-          var dl = el.classList.contains('look') ? (i % 2) * 0.14 : 0;
-          gsap.to(el, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.25, ease: 'expo.inOut', delay: dl, clearProps: 'clipPath' });
+          // фото дресс-кода открываются волной по колонкам сетки
+          var li = Array.prototype.indexOf.call(el.parentNode.children, el);
+          var cols = W.innerWidth >= 720 ? 5 : 2;
+          var dl = el.classList.contains('look') ? (li % cols) * 0.1 : 0;
+          if (out) {
+            var o = out + 'px', h = (el.offsetHeight + out) + 'px';
+            gsap.fromTo(el, { clipPath: 'inset(' + h + ' -' + o + ' -' + o + ' -' + o + ')' }, { clipPath: 'inset(-' + o + ' -' + o + ' -' + o + ' -' + o + ')', duration: 1.25, ease: 'expo.inOut', delay: dl, clearProps: 'clipPath' });
+          } else gsap.to(el, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.25, ease: 'expo.inOut', delay: dl, clearProps: 'clipPath' });
           gsap.fromTo(el, { '--pop': 0.9 }, { '--pop': 0, duration: 1.3, ease: 'power2.out', delay: dl + 0.5 });
           if (img) gsap.to(img, { scale: 1, duration: 1.9, ease: 'expo.out', delay: dl + 0.1 });
         }
