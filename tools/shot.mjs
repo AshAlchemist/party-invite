@@ -13,6 +13,7 @@ const logs = [];
 page.on('console', m => { if (['error', 'warning'].includes(m.type())) logs.push(`[${m.type()}] ${m.text()}`); });
 page.on('pageerror', e => logs.push(`[pageerror] ${e.message}`));
 await page.goto(url, { waitUntil: 'load' });
+if (!a.includes('--closed')) await page.locator('#introGo').click({ timeout: 12000 }).catch(() => {});   // занавес раскрывается по касанию
 await page.waitForTimeout(+opt('--wait', 1500));
 const y = opt('--y', null);
 if (a.includes('--walk')) { const to = y === null || y === 'end' ? 1e9 : +y; await page.evaluate(async to => { const st = innerHeight * 0.45; for (let p = 0; p < Math.min(to, document.documentElement.scrollHeight - innerHeight); p += st) { scrollTo(0, p); await new Promise(r => setTimeout(r, 220)); } }, to); }

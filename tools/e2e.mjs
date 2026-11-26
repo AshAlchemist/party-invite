@@ -33,8 +33,8 @@ page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 const step = (name) => console.log('ok —', name);
 
 await page.goto(url, { waitUntil: 'load' });
-await page.waitForFunction(() => !document.documentElement.classList.contains('is-loading'), null, { timeout: 15000 });
-await page.waitForFunction(() => !document.querySelector('#intro'), null, { timeout: 15000 });
+await page.locator('#introGo').click({ timeout: 15000 });   // занавес ждёт касания гостя
+await page.waitForFunction(() => !document.querySelector('#intro') && !document.documentElement.classList.contains('is-loading'), null, { timeout: 15000 });
 step('занавес открылся и убран');
 
 // 1. пустое имя не отправляется
@@ -87,6 +87,7 @@ step('финал закрыт, страница у экрана подарка, 
 
 // 5. повторный вход: состояние и черновик сохранены, правка обновляет ту же анкету
 await page.reload({ waitUntil: 'load' });
+await page.locator('#introGo').click({ timeout: 15000 });
 await page.waitForFunction(() => !document.querySelector('#intro'), null, { timeout: 15000 });
 assert.equal(await page.locator('#done').isHidden(), false);
 await page.evaluate(e => { window.PARTY.endpoint = e; }, endpoint);

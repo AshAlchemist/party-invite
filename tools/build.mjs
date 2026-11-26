@@ -12,11 +12,11 @@ if (!out || (!site && !args.includes('--single'))) { console.error('нужно: 
 
 const base = args.includes('--url') ? String(args[args.indexOf('--url') + 1] || '').replace(/\/?$/, '/') : '';
 if (base && !/^https?:\/\/[^\s"<>]+\/$/.test(base)) { console.error('--url: нужен адрес вида https://домен/'); process.exit(2); }
-const MIME = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg', mp4: 'video/mp4', woff2: 'font/woff2' };
+const MIME = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg', mp4: 'video/mp4', m4a: 'audio/mp4', woff2: 'font/woff2' };
 const ext = f => f.split('.').pop();
 const dataUri = file => `data:${MIME[ext(file)]};base64,${readFileSync(file).toString('base64')}`;
 const need = file => { if (!existsSync(file)) throw new Error('нет файла ' + file); return file; };
-if (site) for (const dir of ['assets/img', 'assets/js', 'assets/fonts', 'assets/video']) mkdirSync(join(out, dir), { recursive: true });
+if (site) for (const dir of ['assets/img', 'assets/js', 'assets/fonts', 'assets/video', 'assets/audio']) mkdirSync(join(out, dir), { recursive: true });
 else mkdirSync(dirname(out) || '.', { recursive: true });
 
 // ресурс → адрес (сайт: копия в assets/, один файл: data URI)
@@ -54,6 +54,7 @@ if (!site || !existsSync('assets/img/og.jpg')) html = html.replace(/^.*\{\{IMG:o
 // --- картинки и видео ---
 html = html.replace(/\{\{IMG:([\w.-]+)\}\}/g, (_, n) => (n === 'og.jpg' ? base : '') + asset('img', n, 'assets/img'));
 html = html.replace(/\{\{VIDEO\}\}/g, () => asset('video', 'gift.mp4', 'assets/video'));
+html = html.replace(/\{\{AUDIO\}\}/g, () => asset('audio', 'music.m4a', 'assets/audio'));
 
 // --- скрипты: GSAP (бесплатная лицензия GreenSock), Lenis (MIT), свои ---
 const scripts = [

@@ -20,6 +20,8 @@ async function open(viewport, init, mobile = false) {
   page.on('pageerror', e => errors.push(e.message));
   if (init) await page.addInitScript(init);
   await page.goto(url, { waitUntil: 'load' });
+  // занавес ждёт касания; при аварийном режиме его уже нет — тогда нажимать нечего
+  await page.locator('#introGo').click({ timeout: 12000 }).catch(() => {});
   await page.waitForFunction(() => !document.querySelector('#intro') && !document.documentElement.classList.contains('is-loading'), null, { timeout: 20000 });
   return { ctx, page, errors };
 }

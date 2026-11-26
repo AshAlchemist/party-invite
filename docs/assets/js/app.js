@@ -213,7 +213,8 @@
     $('#finaleDemo').hidden = !demo;
     finale.hidden = false;
     finale.classList.remove('is-leaving');
-    if (mainEl) mainEl.inert = true;       // пока открыт финал, Tab не уходит на страницу под ним
+    if (mainEl) mainEl.inert = true;
+    if ($('#sound')) $('#sound').inert = true;       // пока открыт финал, Tab не уходит на страницу под ним
     lock(true);
     fitAll(finale);
     var next = $('#finaleNext');
@@ -244,6 +245,7 @@
       if (rainJob) { rainJob.stop(); rainJob = null; }
     }
     if (mainEl) mainEl.inert = false;
+    if ($('#sound')) $('#sound').inert = false;
     lock(false);
     if (ST) ST.refresh();
     scrollToEl($('#gift'), true);
@@ -258,8 +260,142 @@
   }
 
   // =====================================================================
+  //  МУЗЫКА
+  //  Браузеры включают звук только после касания, поэтому start() вызывается из обработчика
+  //  касания занавеса (или из первого касания страницы, если занавеса нет).
+  //  Громкость меняется через Web Audio: на iPhone свойство volume у <audio> только для чтения.
+  //  hold(причина, да/нет) — причины замолчать (экран подарка, видео со звуком); музыка звучит, когда причин нет.
+  // =====================================================================
+  var Music = (function () {
+    var a = $('#music'), btn = $('#sound');
+    var api = { started: false, start: function () {}, hold: function () {}, warm: function () {}, wake: function () {} };
+    if (!a || typeof a.play !== 'function') return api;
+    var VOL = 0.85, ctx = null, gain = null, tried = false, wanted = false, holds = {}, timer = 0, anim = 0;
+
+    function graph() {
+      if (tried) return;
+      tried = true;
+      var AC = W.AudioContext || W.webkitAudioContext;
+      if (!AC) return;
+      try {
+        ctx = new AC();
+        var src = ctx.createMediaElementSource(a);
+        gain = ctx.createGain();
+        gain.gain.value = 0;
+        src.connect(gain);
+        gain.connect(ctx.destination);
+      } catch (e) { ctx = null; gain = null; }
+    }
+    function level(to, sec, after) {
+      clearTimeout(timer);
+      if (anim) cancelAnimationFrame(anim);
+      anim = 0;
+      if (gain) {
+        var g = gain.gain, t = ctx.currentTime;
+        try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(to, t + sec); } catch (e) { g.value = to; }
+      } else {
+        var from = a.volume, t0 = performance.now();
+        var step = function (now) {
+          var k = Math.min(1, (now - t0) / (sec * 1000 || 1));
+          try { a.volume = from + (to - from) * k; } catch (e) {}
+          anim = k < 1 ? requestAnimationFrame(step) : 0;
+        };
+        step(t0);
+      }
+      if (after) timer = setTimeout(after, sec * 1000 + 80);
+    }
+    function quiet() { for (var k in holds) if (holds[k]) return true; return false; }
+    function audible() { return wanted && !quiet() && !d.hidden; }
+    function paint() {                     // кнопка показывает, звучит ли музыка на самом деле
+      if (!btn) return;
+      var on = audible();
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.setAttribute('aria-label', on ? 'Выключить музыку' : 'Включить музыку');
+    }
+    function resume() {                    // iOS после звонка держит контекст в «interrupted»: будим при каждом касании
+      if (!ctx || ctx.state === 'running') return;
+      try { var r = ctx.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
+    }
+    function apply(sec) {
+      if (audible()) {
+        resume();
+        if (a.paused) {
+          var p = a.play();
+          if (p && p.catch) p.catch(function (err) {
+            if (!err || err.name !== 'NotAllowedError') return;
+            // жест не засчитан (например, прокрутка пальцем): ждём следующего касания
+            wanted = false;
+            api.started = false;
+            if (btn) btn.hidden = true;
+            paint();
+          });
+        }
+        level(VOL, sec);
+      } else if (!a.paused) {
+        level(0, sec, function () { if (!audible()) a.pause(); });
+      }
+      paint();
+    }
+    function session() {
+      var ms = navigator.mediaSession;
+      if (!ms) return;
+      try {
+        if (W.MediaMetadata) ms.metadata = new W.MediaMetadata({ title: 'Вечеринка', artist: 'Скриптонит', album: 'Это моя вечеринка · 12.12' });
+        ms.setActionHandler('play', function () { turnOn(0.6); });
+        ms.setActionHandler('pause', function () { wanted = false; apply(0.4); });
+      } catch (e) {}
+    }
+
+    api.warm = function () { if (a.preload !== 'auto') a.preload = 'auto'; };
+    api.start = function () {
+      if (api.started) return;
+      api.started = true;
+      // «playback»: звук перебивает музыку других приложений и играет при беззвучном режиме iPhone
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+      graph();
+      if (!gain) { try { a.volume = 0; } catch (e) {} }
+      wanted = true;
+      if (btn) btn.hidden = false;
+      session();
+      apply(1.6);
+    };
+    api.hold = function (why, on) {
+      if (!!holds[why] === !!on) return;
+      holds[why] = !!on;
+      if (api.started) apply(on ? 2.4 : 1.6);
+    };
+    // гость сам включил музыку: она звучит и на последнем листе, а видео со звуком встаёт на паузу —
+    // два звука одновременно не играют
+    function turnOn(sec) {
+      wanted = true;
+      holds.gift = false;
+      if (holds.video) pauseVideo();   // как касание гостя по видео: пауза и кнопка «Продолжить»
+      holds.video = false;
+      apply(sec);
+    }
+    api.wake = function () { if (api.started && audible()) resume(); };
+    if (btn) btn.addEventListener('click', function () {
+      if (audible()) { wanted = false; apply(0.5); } else turnOn(0.8);
+    });
+    d.addEventListener('visibilitychange', function () {
+      if (!api.started) return;
+      if (d.hidden) { level(0, 0); a.pause(); } else apply(1.2);
+    });
+    return api;
+  })();
+  // занавеса нет (меньше движения, аварийный режим) — музыка начинается с первого касания страницы
+  ['click', 'touchend', 'keydown'].forEach(function (ev) {
+    d.addEventListener(ev, function () {
+      if (Music.started) Music.wake();
+      else if (!$('#intro')) Music.start();
+    }, true);
+  });
+
+  // =====================================================================
   //  ВИДЕО
   // =====================================================================
+  var primeVideo = function () {}, pauseVideo = function () {};
   function initVideo() {
     var v = $('#video'), btn = $('#play'), bar = $('#bar'), box = $('#screen');
     if (!v || !btn) return;
@@ -284,15 +420,34 @@
       if (!v.paused && !v.ended) raf = requestAnimationFrame(progress);
     }
     v.addEventListener('play', function () { if (!raf) raf = requestAnimationFrame(progress); });
+    // музыка молчит, пока видео идёт со звуком
+    function syncMusic() { Music.hold('video', !v.paused && !v.ended && !v.muted); }
+    ['play', 'playing', 'pause', 'ended', 'volumechange'].forEach(function (ev) { v.addEventListener(ev, syncMusic); });
+    // на последнем листе музыка затихает заранее: к началу видео она уже почти не слышна
+    var gift = $('#gift');
+    if (gift && 'IntersectionObserver' in W) new IntersectionObserver(function (es) {
+      Music.hold('gift', es[0].isIntersecting);
+    }, { rootMargin: '0px 0px -40% 0px' }).observe(gift);
+    // iPhone разрешает видео со звуком только элементу, который уже запускали касанием:
+    // при касании занавеса видео на миг запускается без звука и сразу встаёт на паузу
+    primeVideo = function () {
+      if (started) return;
+      try {
+        v.muted = true;
+        var p = v.play();
+        if (p && p.then) p.then(function () { if (!started) { v.pause(); try { v.currentTime = 0; } catch (e) {} } }, function () {});
+      } catch (e) {}
+    };
     v.addEventListener('ended', function () { bar.style.transform = 'scaleX(1)'; show('Посмотреть ещё раз'); });
     btn.addEventListener('click', function () {
       userPaused = false;
       loud(v.muted || v.ended || !started || v.currentTime < 0.05);
       started = true;
     });
+    pauseVideo = function () { if (!v.paused) { userPaused = true; v.pause(); show('Продолжить'); } };
     v.addEventListener('click', function () {
       if (v.paused) { userPaused = false; loud(v.ended); }
-      else { userPaused = true; v.pause(); show('Продолжить'); }
+      else pauseVideo();
     });
     if (!('IntersectionObserver' in W)) return;
     new IntersectionObserver(function (es) {
@@ -528,6 +683,7 @@
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
   function open() {
+    if (mainEl) mainEl.inert = false;
     root.classList.remove('is-loading');
     if (lenis) lenis.start();
     ST.refresh();
@@ -535,14 +691,41 @@
     if (hash) scrollToEl(hash, true);
   }
 
+  var introReady = false;
   function intro() {
-    var box = $('#intro'), cv = $('#curtain'), flash = $('#flash');
+    var box = $('#intro'), cv = $('#curtain'), flash = $('#flash'), go = $('#introGo');
     var curtain = Silver && Silver.supported ? gl(function () { return Silver.fringe(cv, { curtain: true, seed: 7, density: 1.15, minLen: 1.02, maxLen: 1.12 }); }) : null;
     if (!curtain) box.classList.add('is-plain');
+    if (mainEl) mainEl.inert = true;       // под занавесом Tab не уходит на анкету и видео
     W.scrollTo(0, 0);
-    Promise.all([ready(6000), wait(1500)]).then(function () {
+    Promise.all([ready(6000), wait(900)]).then(function () {
+      if (bailed || !box.isConnected) return;
       relayout();
       coverSet();
+      introReady = true;
+      Music.warm();
+      // занавес ждёт касания: только так браузер разрешит музыку со звуком
+      if (go) {
+        go.hidden = false;
+        requestAnimationFrame(function () { box.classList.add('is-ready'); });
+        try { go.focus({ preventScroll: true }); } catch (e) {}
+      }
+      box.addEventListener('click', openCurtain);
+    });
+    var opened = false;
+    function openCurtain() {
+      if (opened) return;
+      opened = true;
+      box.removeEventListener('click', openCurtain);
+      // страховка после касания: анимация не доиграла — занавес всё равно убираем
+      setTimeout(function () {
+        if (bailed || !box.isConnected) return;
+        try { box.remove(); if (root.classList.contains('is-loading')) { open(); coverClear(); } } catch (err) { bail(err); }
+      }, 8000);
+      try { Music.start(); primeVideo(); } catch (e) {}
+      try { curtainTimeline(); } catch (err) { bail(err); }
+    }
+    function curtainTimeline() {
       var tl = gsap.timeline({ onComplete: function () { if (curtain) curtain.stop(); box.remove(); } });
       tl.to(flash, { opacity: 1, duration: 0.07, ease: 'power4.in' })
         .add(function () { box.style.background = 'transparent'; open(); if (ball) ball.flash(3.2); })
@@ -556,7 +739,8 @@
       }
       coverPlay(tl, 0.42);
       if (ball) { var bf = { v: 3.2 }; tl.to(bf, { v: 1, duration: 2, ease: 'power2.out', onUpdate: function () { ball.flash(bf.v); } }, 0.1); }
-    });
+      if (go) tl.to(go, { autoAlpha: 0, duration: 0.3, ease: 'power1.in' }, 0);
+    }
   }
 
   // =====================================================================
@@ -590,6 +774,7 @@
     if (lenis) { try { lenis.destroy(); } catch (e) {} lenis = null; }
     root.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped', 'lenis-scrolling', 'is-locked', 'is-loading');
     root.classList.add('is-plain');        // стили is-plain снимают всё, что успели спрятать анимации
+    if (mainEl) mainEl.inert = false;
     var box = $('#intro');
     if (box) box.remove();
     try { relayout(); } catch (e) {}
@@ -617,7 +802,7 @@
     intro();
     // страховка: занавес не должен остаться навсегда
     setTimeout(function () {
-      if (bailed || !root.classList.contains('is-loading')) return;
+      if (bailed || introReady || !root.classList.contains('is-loading')) return;   // занавес готов и ждёт касания — это не сбой
       try { var b = $('#intro'); if (b) b.remove(); open(); coverClear(); } catch (err) { bail(err); }
     }, 11000);
   } catch (err) {

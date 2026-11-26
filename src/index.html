@@ -32,10 +32,19 @@
 <body>
 
 <!-- Занавес: серебряная бахрома на входе -->
-<div class="intro" id="intro" aria-hidden="true">
-  <canvas class="intro__fringe" id="curtain"></canvas>
+<div class="intro" id="intro">
+  <canvas class="intro__fringe" id="curtain" aria-hidden="true"></canvas>
+  <!-- звук браузер разрешает только после касания: занавес раскрывается по нему, и с ним же начинается музыка -->
+  <button class="intro__go" id="introGo" type="button" hidden>
+    <span class="intro__kicker">12 · 12 · 2026</span>
+    <span class="intro__label">Открыть<br>приглашение</span>
+    <span class="intro__hint"><i aria-hidden="true"></i>со звуком</span>
+  </button>
 </div>
 <div class="flash" id="flash" aria-hidden="true"></div>
+<!-- музыка: файл уже начинается с 0:20 трека и идёт по кругу -->
+<audio id="music" preload="metadata" loop src="{{AUDIO}}"></audio>
+<button class="sound" id="sound" type="button" aria-pressed="true" aria-label="Выключить музыку" hidden><i></i><i></i><i></i><i></i></button>
 
 <main id="top">
 
