@@ -56,6 +56,7 @@ assert.equal(await page.locator('#q7').inputValue(), 'Лет пять, не ме
 assert.equal((await page.locator('#count').textContent()).trim(), 'Отвечено 3 из 10');
 await page.locator('#go').click();
 await page.waitForFunction(() => !document.querySelector('#finale').hidden, null, { timeout: 8000 });
+const shownAt = Date.now();
 assert.equal(got.length, 1);
 assert.equal(got[0].name, 'Анна Тестовая');
 assert.equal(got[0].q1, 'Надувной фламинго');
@@ -76,14 +77,28 @@ assert.ok(!f1.equals(f2), 'дождь не движется');
 assert.ok(f1.length > 3000, 'полоса пустая: ' + f1.length);
 step('серебряный дождь движется (кадры различаются, ' + f1.length + ' и ' + f2.length + ' байт)');
 
-// 4. «и последнее…» закрывает финал и ведёт к подарку
-await page.locator('#finaleNext').click();
+// 4. без касаний: через 2 с после прорисовки «СПАСИБО» (2,45 с) финал закрывается и страница плавно едет к видео
+await page.waitForFunction(() => document.querySelector('#finale').classList.contains('is-leaving'), null, { timeout: 9000 });
+const after = (Date.now() - shownAt) / 1000;
+assert.ok(after >= 4.0 && after <= 5.6, `автопереход через ${after.toFixed(1)} с после «СПАСИБО» (ожидалось ≈ 4,45 с)`);
+// замеряем движение по низу экрана с видео: страница едет, а не прыгает, и останавливается, когда видео видно целиком
+const vh = await page.evaluate(() => innerHeight);
+const path = [];
+for (let i = 0; i < 24; i++) {
+  path.push(await page.evaluate(() => Math.round(document.querySelector('#screen').getBoundingClientRect().bottom)));
+  if (path.length > 3 && path.at(-1) === path.at(-2) && path.at(-1) <= vh) break;
+  await page.waitForTimeout(150);
+}
+const scr = await page.evaluate(() => { const r = document.querySelector('#screen').getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom) }; });
+assert.ok(scr.top >= 0 && scr.bottom <= vh, `экран с видео виден не целиком: ${scr.top}..${scr.bottom} при высоте ${vh}`);
+assert.ok(path[0] > vh + 100, 'перед прокруткой видео уже на экране — ехать некуда: ' + path.join(' → '));
+assert.ok(path.some(p => p > scr.bottom + 40 && p < path[0] - 40), 'прокрутка не плавная: ' + path.join(' → '));
 await page.waitForFunction(() => document.querySelector('#finale').hidden, null, { timeout: 5000 });
-const pos = await page.evaluate(() => Math.round(document.querySelector('#gift').getBoundingClientRect().top));
-assert.ok(Math.abs(pos) < 40, 'страница не у экрана подарка: ' + pos);
+await page.waitForFunction(() => !document.querySelector('#video').paused, null, { timeout: 6000 })
+  .catch(async () => { throw new Error('после автоперехода видео не запустилось: ' + JSON.stringify(await page.evaluate(() => { const r = document.querySelector('#screen').getBoundingClientRect(); return { top: Math.round(r.top), h: Math.round(r.height), vh: innerHeight }; }))); });
 assert.equal(await page.locator('#done').isVisible(), true);
 assert.equal(await page.locator('#form').isHidden(), true);
-step('финал закрыт, страница у экрана подарка, карточка в состоянии «Спасибо»');
+step(`через ${after.toFixed(1)} с финал закрылся сам, страница плавно доехала до видео (${path.join(' → ')}), карточка в состоянии «Спасибо»`);
 
 // 5. повторный вход: состояние и черновик сохранены, правка обновляет ту же анкету
 await page.reload({ waitUntil: 'load' });
@@ -101,9 +116,23 @@ await page.waitForFunction(() => !document.querySelector('#finale').hidden, null
 assert.equal(got.length, 2);
 assert.equal(got[1].id, got[0].id);
 assert.equal(got[1].q2, 'Кот сел на ключи');
-await page.keyboard.press('Escape');
+// кнопка проявляется к 3,2 с — раньше автоперехода (4,45 с); нажимаем сразу, как проявилась
+await page.waitForFunction(() => +getComputedStyle(document.querySelector('#finaleNext')).opacity >= 0.99, null, { timeout: 8000 });
+assert.equal(await page.evaluate(() => document.querySelector('#finale').classList.contains('is-leaving')), false, 'финал закрылся сам до нажатия кнопки');
+await page.locator('#finaleNext').dispatchEvent('click');
 await page.waitForFunction(() => document.querySelector('#finale').hidden, null, { timeout: 5000 });
-step('после перезагрузки ответы на месте; правка уходит с тем же ID; Esc закрывает финал');
+let y1 = -1;
+for (let i = 0; i < 20; i++) {             // прокрутка к видео идёт до 1,6 с — ждём, пока встанет
+  const y = await page.evaluate(() => Math.round(scrollY));
+  if (y === y1) break;
+  y1 = y;
+  await page.waitForTimeout(300);
+}
+await page.waitForTimeout(3000);          // таймер автоперехода не должен сработать после закрытия кнопкой
+assert.equal(await page.locator('#finale').isHidden(), true);
+assert.equal(await page.evaluate(() => Math.round(scrollY)), y1, 'страница сдвинулась после закрытия финала кнопкой');
+await page.keyboard.press('Escape');       // Esc без открытого финала ничего не ломает
+step('после перезагрузки ответы на месте; правка уходит с тем же ID; «и последнее…» закрывает финал, таймер не срабатывает повторно');
 
 // 6. приёмник ответил ошибкой, которую браузер не даёт прочитать: успех показывать нельзя
 broken = true;

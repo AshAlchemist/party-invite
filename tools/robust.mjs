@@ -92,7 +92,9 @@ for (const [w, h] of [[844, 390], [844, 340], [667, 375]]) {
   await fillName(page, 'Гость');
   await page.locator('#go').click();
   await page.waitForFunction(() => !document.querySelector('#finale').hidden);
-  await page.waitForTimeout(3600);
+  // мерим, как только кнопка проявилась (≈3,2 с): финал сам закроется через 4,45 с
+  await page.waitForFunction(() => +getComputedStyle(document.querySelector('#finaleNext')).opacity >= 0.99, null, { timeout: 8000 });
+  assert.equal(await page.evaluate(() => document.querySelector('#finale').classList.contains('is-leaving')), false, 'финал закрылся до замера');
   const box = await page.locator('#finaleNext').boundingBox();
   assert.ok(box && box.y >= 0 && box.y + box.height <= h + 1, `кнопка финала за краем экрана ${w}×${h}: ${box && Math.round(box.y)}..${box && Math.round(box.y + box.height)}`);
   const top = await page.locator('#finaleTitle').boundingBox();
