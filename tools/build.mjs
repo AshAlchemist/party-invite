@@ -44,7 +44,7 @@ html = html.replace('/*FONTS*/', () => fontCss).replace('/*CSS*/', () => css);
 const preload = site ? [
   '<link rel="preload" href="assets/fonts/noto-serif-display-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>',
   '<link rel="preload" href="assets/fonts/great-vibes-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>',
-  '<link rel="preload" as="image" type="image/webp" href="assets/img/glass.webp" imagesrcset="assets/img/glass-760.webp 760w, assets/img/glass.webp 1380w" imagesizes="(min-width: 1000px) 42vw, 92vw" fetchpriority="high">',
+  '<link rel="preload" as="image" type="image/webp" href="assets/img/glass.webp" imagesrcset="assets/img/glass-620.webp 620w, assets/img/glass.webp 948w" imagesizes="(min-width: 1000px) 38vw, 92vw" fetchpriority="high">',
 ].join('\n') : '';
 html = html.replace('<!--PRELOAD-->', () => preload);
 

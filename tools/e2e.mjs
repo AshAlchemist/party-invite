@@ -48,16 +48,16 @@ step('без имени анкета не уходит, показана под�
 // 2. заполнение и отправка
 await page.locator('#f-name').fill('Анна Тестовая');
 await page.locator('#q1').fill('Надувной фламинго');
-await page.locator('.chips[data-for="q7"] .chip').nth(1).click();
+await page.locator('#q7').fill('Лет пять, не меньше');
 await page.locator('#q10').fill('=СУММ(1;2)');
-assert.equal(await page.locator('#q7').inputValue(), 'Музыку');
+assert.equal(await page.locator('#q7').inputValue(), 'Лет пять, не меньше');
 assert.equal((await page.locator('#count').textContent()).trim(), 'Отвечено 3 из 10');
 await page.locator('#go').click();
 await page.waitForFunction(() => !document.querySelector('#finale').hidden, null, { timeout: 8000 });
 assert.equal(got.length, 1);
 assert.equal(got[0].name, 'Анна Тестовая');
 assert.equal(got[0].q1, 'Надувной фламинго');
-assert.equal(got[0].q7, 'Музыку');
+assert.equal(got[0].q7, 'Лет пять, не меньше');
 assert.equal(got[0].q2, '');
 assert.ok(got[0].id && got[0].id.length > 8);
 assert.equal(await page.locator('#finaleDemo').isHidden(), true);

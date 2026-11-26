@@ -15,7 +15,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0A09'/%3E%3Ccircle cx='16' cy='17' r='10' fill='%23C6C9CC'/%3E%3Cpath d='M6 17h20M8 12h16M8 22h16M16 7v20M11 8v18M21 8v18' stroke='%230A0A09' stroke-width='1'/%3E%3Cpath d='M16 0v7' stroke='%23C6C9CC'/%3E%3C/svg%3E">
 <link rel="preload" href="assets/fonts/noto-serif-display-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/great-vibes-normal-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" as="image" type="image/webp" href="assets/img/glass.webp" imagesrcset="assets/img/glass-760.webp 760w, assets/img/glass.webp 1380w" imagesizes="(min-width: 1000px) 42vw, 92vw" fetchpriority="high">
+<link rel="preload" as="image" type="image/webp" href="assets/img/glass.webp" imagesrcset="assets/img/glass-620.webp 620w, assets/img/glass.webp 948w" imagesizes="(min-width: 1000px) 38vw, 92vw" fetchpriority="high">
 <style>
 @font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url(assets/fonts/golos-text-normal-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
 @font-face{font-family:'Golos Text';font-style:normal;font-weight:400 900;font-display:swap;src:url(assets/fonts/golos-text-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
@@ -87,7 +87,7 @@ html:not(.js) .intro{display:none}
 .title__fit--b{font-size:19vw;font-weight:600}
 .cover__stage{position:relative;min-height:330px}
 
-.glass{position:absolute;z-index:3;top:-5.2vh;right:calc(var(--pad)*-1 - 10px);height:max(106%,540px);aspect-ratio:1380/2380;will-change:transform}
+.glass{position:absolute;z-index:3;top:-5.2vh;right:calc(var(--pad)*-1 - 42px);height:max(106%,540px);aspect-ratio:948/1523;will-change:transform}
 .glass img{display:block;width:100%;height:100%;filter:drop-shadow(0 30px 34px rgba(60,48,28,.16))}
 
 .ball{position:absolute;z-index:1;left:-9vw;top:clamp(6px,calc((100svh - 610px)*.75),240px);width:min(42vw,200px,23svh);aspect-ratio:1;transform-origin:50% calc(var(--cord,100vh)*-1);will-change:transform}
@@ -126,9 +126,7 @@ html:not(.js) .intro{display:none}
 .dress__text{font-family:var(--serif);font-stretch:70%;font-weight:400;font-size:clamp(26px,7.2vw,44px);line-height:1.08;max-width:14em}
 .looks{margin-top:clamp(44px,8vh,96px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .look{position:relative}
-.look--2,.look--4{margin-top:52px}
-.look--3,.look--4{margin-top:0}
-.look--4{margin-top:52px}
+.look:nth-child(even){margin-top:52px}
 .look__in{position:relative;overflow:hidden;aspect-ratio:2/3;background:var(--coal)}
 .look img{display:block;width:100%;height:116%;object-fit:cover;filter:saturate(.62) contrast(1.06)}
 .look__in::after,.screen__frame::after{content:'';position:absolute;inset:0;background:#fff;opacity:var(--pop,0);pointer-events:none}
@@ -218,12 +216,13 @@ html:not(.js) .intro{display:none}
 .gift__text em{font-family:var(--script);font-style:normal;font-size:1.22em;line-height:.8;letter-spacing:0;padding:0 .12em 0 .04em;background:var(--metal);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheet 7s ease-in-out infinite alternate}
 @keyframes sheet{to{background-position:100% 0}}
 .screen{position:relative;width:min(100%,400px);margin:0 auto}
-.screen__frame{position:relative;aspect-ratio:9/16;padding:9px;background:var(--metal);box-shadow:0 0 0 1px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.5)}
+/* тонкая линия-паспарту вокруг видео вместо металлической рамки */
+.screen__frame{position:relative;aspect-ratio:9/16;outline:1px solid rgba(237,231,218,.34);outline-offset:11px}
 .screen video{display:block;width:100%;height:100%;object-fit:cover;background:#000;cursor:pointer}
 .screen__play{position:absolute;left:50%;bottom:36px;translate:-50% 0;display:flex;align-items:center;gap:10px;height:54px;padding:0 22px 0 16px;border:1px solid rgba(237,231,218,.5);border-radius:0;background:rgba(10,10,9,.74);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--milk);font:500 12px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;transition:opacity .3s,visibility .3s,background-color .2s}
 .screen__play.is-off{opacity:0;visibility:hidden}
 @media (hover:hover){.screen__play:hover{background:var(--milk);color:var(--ink)}}
-.screen__bar{position:absolute;left:9px;right:9px;bottom:9px;height:3px;background:rgba(255,255,255,.18);pointer-events:none}
+.screen__bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(255,255,255,.18);pointer-events:none}
 .screen__bar i{display:block;height:100%;background:var(--milk);transform:scaleX(0);transform-origin:left}
 .foot{margin-top:clamp(80px,14vh,170px);padding:0 var(--pad) max(34px,env(safe-area-inset-bottom));text-align:center}
 .foot__a{font-size:clamp(64px,19vw,150px);background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent;padding:.1em .2em .16em}
@@ -248,8 +247,10 @@ html:not(.js) .intro{display:none}
 /* ===== Планшет и десктоп ===== */
 @media (min-width:720px){
   .title__fit{font-size:14vw}
-  .looks{gap:18px}
+  .looks{grid-template-columns:repeat(5,minmax(0,1fr));gap:20px 14px}
+  .look:nth-child(5n+1){margin-top:56px}.look:nth-child(5n+2){margin-top:0}.look:nth-child(5n+3){margin-top:104px}.look:nth-child(5n+4){margin-top:24px}.look:nth-child(5n){margin-top:72px}
   .dress__palette{grid-template-columns:auto 1fr;align-items:center;gap:56px}
+  .glass{right:calc(var(--pad)*-1 - 10px)}
   .ball{width:min(30vw,250px);left:2vw;top:clamp(10px,calc((100svh - 800px)*.5),200px)}
   .note{width:min(40vw,360px)}
 }
@@ -258,7 +259,7 @@ html:not(.js) .intro{display:none}
   .cover__bar{font-size:11.5px}
   .title{width:min(56vw,860px)}
   .cover__stage{min-height:300px}
-  .glass{top:auto;bottom:-.6vh;right:calc(var(--pad)*-.2 + 1vw);height:min(97svh,1100px)}
+  .glass{top:auto;bottom:-.6vh;right:calc(var(--pad)*-.2 + 1vw);height:min(93svh,1060px)}
   .ball{--cord:120vh;--bw:min(20vw,300px);width:var(--bw);left:calc(min(56vw,860px) + 20px - var(--bw)/2);top:auto;bottom:6vh}
   .note{left:0;bottom:clamp(40px,9vh,96px);width:400px}
   .note__hi{font-size:clamp(64px,5.6vw,92px)}
@@ -271,8 +272,7 @@ html:not(.js) .intro{display:none}
   .display__row>span{font-size:16vw}
   .dress__palette{grid-column:8/13;align-self:end;grid-template-columns:1fr;gap:28px;margin:0 0 3vh}
   .sw{width:clamp(80px,7vw,112px);margin-right:-16px}
-  .looks{grid-column:1/13;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:clamp(56px,9vh,110px)}
-  .look--1{margin-top:64px}.look--2{margin-top:0}.look--3{margin-top:120px}.look--4{margin-top:28px}
+  .looks{grid-column:1/13;gap:28px 24px;margin-top:clamp(56px,9vh,110px)}
   .info__grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:9%;align-items:end}
   .date__num{font-size:clamp(300px,31vw,470px)}
   .date__month{font-size:clamp(110px,11.5vw,180px)}
@@ -357,13 +357,13 @@ html.is-plain .shade{opacity:0!important}
       </div>
 
       <figure class="glass" id="glass">
-        <img src="assets/img/glass.webp" srcset="assets/img/glass-760.webp 760w, assets/img/glass.webp 1380w" sizes="(min-width: 1000px) 42vw, 92vw"
-             width="1380" height="2380" alt="Именинница сидит в большом хрустальном бокале на высокой ножке, рядом — оливки на серебряной шпажке" fetchpriority="high" decoding="async">
-        <i class="glint" style="--x:54.2%;--y:34.6%;--s:1.25;--d:0s"></i>
-        <i class="glint" style="--x:12.2%;--y:20.2%;--s:.8;--d:1.3s"></i>
-        <i class="glint" style="--x:32.4%;--y:37.4%;--s:1;--d:2.1s"></i>
-        <i class="glint" style="--x:93%;--y:39%;--s:.7;--d:.7s"></i>
-        <i class="glint" style="--x:62.6%;--y:63.4%;--s:.9;--d:2.9s"></i>
+        <img src="assets/img/glass.webp" srcset="assets/img/glass-620.webp 620w, assets/img/glass.webp 948w" sizes="(min-width: 1000px) 38vw, 92vw"
+             width="948" height="1523" alt="Именинница в большом хрустальном бокале на высокой ножке: ноги в туфлях на шпильке закинуты через край, рука поднята вверх" fetchpriority="high" decoding="async">
+        <i class="glint" style="--x:19.8%;--y:38.4%;--s:1.15;--d:0s"></i>
+        <i class="glint" style="--x:84%;--y:39.6%;--s:.8;--d:1.3s"></i>
+        <i class="glint" style="--x:53.2%;--y:56.5%;--s:.9;--d:2.1s"></i>
+        <i class="glint" style="--x:5.4%;--y:13.8%;--s:.7;--d:.7s"></i>
+        <i class="glint" style="--x:32.4%;--y:94.2%;--s:1;--d:2.9s"></i>
       </figure>
 
       <div class="note">
@@ -401,10 +401,16 @@ html.is-plain .shade{opacity:0!important}
       </div>
 
       <div class="looks">
-        <figure class="look look--1" data-photo><div class="look__in"><img src="assets/img/dc1.webp" width="736" height="1104" loading="lazy" decoding="async" alt="Чёрный костюм и серебряная мишура на полу, усыпанном конфетти"></div></figure>
-        <figure class="look look--2" data-photo><div class="look__in"><img src="assets/img/dc2.webp" width="900" height="1688" loading="lazy" decoding="async" alt="Серебряная юбка в пайетках и чёрный жакет"></div></figure>
-        <figure class="look look--3" data-photo><div class="look__in"><img src="assets/img/dc3.webp" width="800" height="1200" loading="lazy" decoding="async" alt="Оливковый атласный костюм с белым цветком"></div></figure>
-        <figure class="look look--4" data-photo><div class="look__in"><img src="assets/img/dc4.webp" width="1039" height="1280" loading="lazy" decoding="async" alt="Чёрное атласное платье и серебряное колье, снято со вспышкой"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc1.webp" width="640" height="826" loading="lazy" decoding="async" alt="Чёрный атласный топ и длинная чёрная юбка"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc2.webp" width="640" height="960" loading="lazy" decoding="async" alt="Молочный костюм и боа из белых перьев"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc3.webp" width="640" height="1138" loading="lazy" decoding="async" alt="Оливковое атласное платье"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc4.webp" width="640" height="894" loading="lazy" decoding="async" alt="Чёрный топ и прозрачная юбка с пайетками"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc5.webp" width="640" height="1138" loading="lazy" decoding="async" alt="Чёрный жакет и длинный молочный шарф"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc6.webp" width="640" height="960" loading="lazy" decoding="async" alt="Чёрный костюм и серебряная мишура на полу, усыпанном конфетти"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc7.webp" width="640" height="902" loading="lazy" decoding="async" alt="Серебряная юбка в пайетках, белая блуза с перьями и бокал в руке"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc8.webp" width="640" height="960" loading="lazy" decoding="async" alt="Прозрачный топ с пайетками и чёрный костюм"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc9.webp" width="640" height="960" loading="lazy" decoding="async" alt="Оливковый атласный костюм с белым цветком"></div></figure>
+        <figure class="look" data-photo><div class="look__in"><img src="assets/img/dc10.webp" width="640" height="974" loading="lazy" decoding="async" alt="Чёрная футболка и юбка с пайетками"></div></figure>
       </div>
     </div>
     <i class="shade" aria-hidden="true"></i>
@@ -482,14 +488,12 @@ html.is-plain .shade{opacity:0!important}
             <textarea id="q6" name="q6" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
           </li>
           <li class="q" data-in>
-            <label for="q7"><span class="q__n">07</span><span class="q__t">Что бы ты предпочёл: чтобы твои друзья выбирали тебе одежду или музыку на целый год?</span></label>
-            <div class="chips" data-for="q7"><button type="button" class="chip">Одежду</button><button type="button" class="chip">Музыку</button></div>
-            <textarea id="q7" name="q7" rows="1" maxlength="1000" placeholder="Или своими словами"></textarea>
+            <label for="q7"><span class="q__n">07</span><span class="q__t">Как давно мы знакомы?</span></label>
+            <textarea id="q7" name="q7" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
           </li>
           <li class="q" data-in>
-            <label for="q8"><span class="q__n">08</span><span class="q__t">Что хуже: случайно отправить сообщение не тому человеку или поставить лайк на фотографии десятилетней давности?</span></label>
-            <div class="chips" data-for="q8"><button type="button" class="chip">Сообщение не тому</button><button type="button" class="chip">Лайк на старом фото</button></div>
-            <textarea id="q8" name="q8" rows="1" maxlength="1000" placeholder="Или своими словами"></textarea>
+            <label for="q8"><span class="q__n">08</span><span class="q__t">Какое прозвище тебе давали?</span></label>
+            <textarea id="q8" name="q8" rows="1" maxlength="1000" placeholder="Твой ответ"></textarea>
           </li>
           <li class="q" data-in>
             <label for="q9"><span class="q__n">09</span><span class="q__t">Если бы тебе пришлось всю жизнь есть одно блюдо, что бы это было?</span></label>
@@ -540,8 +544,6 @@ html.is-plain .shade{opacity:0!important}
           </button>
           <div class="screen__bar" aria-hidden="true"><i id="bar"></i></div>
         </div>
-        <i class="glint" style="--x:1%;--y:2%;--s:1.2;--d:.4s"></i>
-        <i class="glint" style="--x:99%;--y:97%;--s:.9;--d:1.8s"></i>
       </div>
     </div>
 
