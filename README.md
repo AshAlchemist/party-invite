@@ -42,12 +42,13 @@
 ## 2. Где опубликовано и как обновлять
 
 - Репозиторий: https://github.com/AshAlchemist/party-invite (ветка `main` — исходники и готовый сайт в `docs/`).
-- Сайт: https://ashalchemist.github.io/party-invite/ — GitHub Pages отдаёт ветку `gh-pages`, в ней лежит содержимое `docs/`.
+- Сайт: https://elizaveta-alimpieva.ru/ (домен с reg.ru; старый адрес https://ashalchemist.github.io/party-invite/ переадресует на него).
+  GitHub Pages отдаёт ветку `gh-pages`, в ней лежит содержимое `docs/`, включая файл `CNAME` с именем домена — не удаляйте его.
 
 Обновить сайт после правок:
 
 ```
-node tools/build.mjs --site docs --url https://ashalchemist.github.io/party-invite/
+node tools/build.mjs --site docs --url https://elizaveta-alimpieva.ru/
 git add -A && git commit -m "что изменено"
 git push origin main
 git push origin "$(git subtree split --prefix docs -q):refs/heads/gh-pages" --force
@@ -64,7 +65,7 @@ git push origin "$(git subtree split --prefix docs -q):refs/heads/gh-pages" --fo
 ## 3. Пересобрать после правок
 
 ```
-node tools/build.mjs --site docs --url https://ashalchemist.github.io/party-invite/   # сайт для GitHub Pages
+node tools/build.mjs --site docs --url https://elizaveta-alimpieva.ru/   # сайт для GitHub Pages
 node tools/build.mjs --single dist/party-invite.html   # всё в одном файле, ≈ 8,6 МБ
 ```
 
